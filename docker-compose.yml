@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  app:
+    working_dir: /${APP_DIR}
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "${APP_PORT}:3000"
+
+    volumes:
+      - .:/${APP_DIR}:cached
+      - ~/.ssh:/root/.ssh:ro
+      # Host dotfiles
+      - ${ZSHRC_PATH:-${HOME}/.zshrc}:/root/.zshrc:ro
+      - ${NEOVIM_CONFIG_PATH:-${HOME}/.config/nvim}:/root/.config/nvim
+      - ${GITCONFIG_PATH:-${HOME}/.gitconfig}:/root/.gitconfig:ro
+      - ${CODEX_PATH:-/dev/null}:/root/.codex
+      # Persist Neovim data/cache/state so plugins are not reinstalled each time
+      - nvim-data:/root/.local/share/nvim
+      - nvim-state:/root/.local/state/nvim
+      - nvim-cache:/root/.cache/nvim
+
+    stdin_open: true
+    tty: true
+    command: zsh
+
+    env_file:
+      - .env
+
+    networks:
+      - devnet
+
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:${POSTGRES_VERSION}-alpine
+
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+
+    ports:
+      - "${DB_PORT}:5432"
+
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+    networks:
+      - devnet
+
+  dbmate:
+    image: amacneil/dbmate
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: up
+    networks:
+      - devnet
+
+# Uncomment for per-project pgAdmin
+#  pgadmin:
+#    image: dpage/pgadmin4:latest
+#    restart: always
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL:  ${PGADMIN_EMAIL}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+#    ports:
+#      - "${PGADMIN_PORT}:80"
+#    volumes:
+#      - pgadmin-data:/var/lib/pgadmin
+#    depends_on:
+#      - postgres
+#    networks:
+#      - devnet
+
+volumes:
+  postgres:
+  nvim-data:
+  nvim-state:
+  nvim-cache:
+  #pgadmin-data:
+
+networks:
+  devnet:
+    driver: bridge
