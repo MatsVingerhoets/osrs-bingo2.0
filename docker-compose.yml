@@ -24,18 +24,6 @@ services:
     networks:
       - devnet
       - shared-postgres-network
-
-  dbmate:
-    image: amacneil/dbmate
-    environment:
-      DATABASE_URL: "postgres://${DB_USER}:${DB_PASSWORD}@${SHARED_DB_HOST:-postgres-shared}:5432/${DB_NAME}?sslmode=disable"
-    volumes:
-      - .:/app
-    working_dir: /app
-    command: up
-    networks:
-      - shared-postgres-network
-
 volumes:
   nvim-data:
   nvim-state:
