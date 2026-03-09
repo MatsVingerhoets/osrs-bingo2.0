@@ -16,14 +16,17 @@
 - Authentication uses Keycloak OIDC.
 - The app auto-provisions a local user on first successful login.
 - The app stores a local user model for app-owned data and relationships.
-- Keycloak roles are synchronized into the app role on login.
+- Keycloak roles are synchronized into the app roles array on login.
+- The app keeps separate local fields for `keycloakId`, `username`, and `email`.
+- The app does not use a separate `display_name` field in the first auth pass.
 
 ### Role Mapping
 
 - `osrs_bingo_admin` maps to `ADMIN`.
 - `osrs_bingo_user` maps to `USER`.
-- No mapped role defaults to `USER`.
-- A user with both roles is treated as `ADMIN`.
+- No mapped role defaults to `['USER']`.
+- Roles are read from Keycloak client roles only.
+- A user with both mapped roles keeps both roles in the local roles array.
 
 ### Team Model
 
@@ -125,4 +128,4 @@ Current leaning:
 
 ## Outstanding Questions
 
-- Exact Keycloak claim fields for local user provisioning and profile sync.
+- Exact Keycloak username-style claim to use for local `username`.

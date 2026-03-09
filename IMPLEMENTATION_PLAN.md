@@ -17,6 +17,13 @@ This document converts the current product and architecture decisions into an ex
 - The first release uses one canonical fixed honeycomb board.
 - Team gameplay is the source of truth; per-user scoring is informational only.
 
+## Cross-Cutting Conventions
+
+- prefer Tailwind utility classes for application styling
+- use `src/styles.css` only for global concerns such as Tailwind imports, theme tokens, fonts, and browser-wide base rules
+- add custom CSS only when the result cannot be expressed cleanly with Tailwind utilities or would be materially harder to maintain
+- when custom CSS is necessary, keep it small, explicit, and local to the actual constraint
+
 ## Delivery Strategy
 
 Build the app in narrow vertical slices, starting with infrastructure and correctness-critical flows first.
@@ -89,8 +96,8 @@ Establish Keycloak OIDC login and a stable local session model.
 
 - unauthenticated users are redirected into login flow
 - successful Keycloak login creates a local user if one does not exist
-- user role is resolved from Keycloak roles on login
-- missing mapped roles default to `USER`
+- user roles are resolved from Keycloak client roles on login
+- missing mapped roles default to `['USER']`
 - admin-only routes reject non-admin users
 
 ### Risks
@@ -101,8 +108,9 @@ Establish Keycloak OIDC login and a stable local session model.
 
 ### Notes
 
-- confirm exact claim fields to use for `keycloak_subject`, `username`, `display_name`, and `email`
+- confirm exact claim fields to use for `keycloak_subject`, `username`, and `email`
 - keep the auth integration minimal at first; avoid feature creep into identity management
+- store local app roles as an array rather than a single resolved role
 
 ## Phase 3: Database Schema And Persistence Layer
 

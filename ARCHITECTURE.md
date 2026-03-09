@@ -62,7 +62,7 @@ On successful login:
 1. Validate OIDC callback.
 2. Resolve external user identity.
 3. Create a local user row if none exists.
-4. Update local role based on Keycloak roles.
+4. Update local roles based on Keycloak client roles.
 5. Create or refresh the app session.
 
 ### Local Session
@@ -80,10 +80,10 @@ Reasoning:
 
 - `osrs_bingo_admin` -> `ADMIN`
 - `osrs_bingo_user` -> `USER`
-- no mapped role -> `USER`
-- both roles present -> `ADMIN`
+- no mapped role -> `['USER']`
+- both roles present -> keep both mapped roles
 
-The app should store the resolved role in the local user record for fast authorization checks while still treating Keycloak as the source of authority on login.
+The app should store the mapped roles array in the local user record for fast authorization checks while still treating Keycloak as the source of authority on login.
 
 ## Domain Model
 
@@ -120,16 +120,15 @@ Suggested fields:
 - `id`
 - `keycloak_subject`
 - `username`
-- `display_name`
 - `email`
-- `role`
+- `roles`
 - `created_at`
 - `updated_at`
 
 Notes:
 
 - `keycloak_subject` should be unique.
-- `role` stores resolved app authorization level.
+- `roles` stores the resolved app authorization levels as an array.
 
 ### events
 
