@@ -60,3 +60,14 @@ export async function upsertUserFromKeycloak(input: ProvisionAuthUserInput) {
 
   return mapUser(user)
 }
+
+export async function listUsers() {
+  const users = await getDb()
+    .selectFrom('users')
+    .selectAll()
+    .orderBy('name')
+    .orderBy('email')
+    .execute()
+
+  return users.map(mapUser)
+}

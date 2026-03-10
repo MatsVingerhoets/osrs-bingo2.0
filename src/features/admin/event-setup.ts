@@ -6,6 +6,7 @@ import {
   getNextEventStatuses,
 } from '#/domain/event-setup'
 import { getCurrentAuth } from '#/server/auth/current-auth'
+import { canEditBoardDefinition } from '#/domain/event-state'
 import { findBoardByEventId } from '#/repositories/board-repository'
 import {
   createEvent,
@@ -15,6 +16,14 @@ import {
   listEvents,
   updateEvent,
 } from '#/repositories/event-repository'
+import { listUsers } from '#/repositories/user-repository'
+import {
+  assignTeamMembership,
+  createTeam,
+  findTeamById,
+  listTeamMembershipsByEvent,
+  listTeamsByEvent,
+} from '#/repositories/team-repository'
 import type { EventStatus } from '#/models/db'
 
 type DraftEventInput = {
@@ -23,8 +32,29 @@ type DraftEventInput = {
   durationMinutes: number
 }
 
+type TeamInput = {
+  eventId: string
+  name: string
+}
+
+type TeamAssignmentInput = {
+  eventId: string
+  teamId: string
+  userId: string
+}
+
 function normalizeName(name: string) {
   return name.trim()
+}
+
+function normalizeTeamName(name: string) {
+  const value = name.trim()
+
+  if (value.length === 0) {
+    throw new Error('Team name is required')
+  }
+
+  return value
 }
 
 function normalizeStartTime(startTime: string) {
@@ -86,14 +116,31 @@ async function getDraftReadiness(eventId: string) {
   })
 }
 
+async function requireManageableEvent(eventId: string) {
+  const event = await findEventById(eventId)
+
+  if (!event) {
+    throw new Error('Event not found')
+  }
+
+  if (!canEditBoardDefinition(event.status) && event.status !== 'active') {
+    throw new Error('Teams can only be managed for draft or active events')
+  }
+
+  return event
+}
+
 export const getAdminEventSetupData = createServerFn({ method: 'GET' }).handler(
   async () => {
     const auth = await requireAdmin()
     const events = await listEvents()
+    const users = await listUsers()
 
     const eventRows = await Promise.all(
       events.map(async (event) => {
         const board = await findBoardByEventId(event.id)
+        const teams = await listTeamsByEvent(event.id)
+        const memberships = await listTeamMembershipsByEvent(event.id)
         const readinessIssues =
           event.status === 'draft'
             ? getDraftEventReadinessIssues({
@@ -103,6 +150,29 @@ export const getAdminEventSetupData = createServerFn({ method: 'GET' }).handler(
                 boardAttached: Boolean(board),
               })
             : []
+        const teamRows = teams.map((team) => ({
+          id: team.id,
+          name: team.name,
+          memberCount: memberships.filter(
+            (membership) => membership.team_id === team.id,
+          ).length,
+          members: memberships
+            .filter((membership) => membership.team_id === team.id)
+            .map((membership) => ({
+              membershipId: membership.id,
+              userId: membership.user_id,
+              name: membership.user_name,
+              email: membership.user_email,
+            })),
+        }))
+        const assignedUserIds = new Set(memberships.map((membership) => membership.user_id))
+        const unassignedUsers = users
+          .filter((user) => !assignedUserIds.has(user.id))
+          .map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          }))
 
         return {
           id: event.id,
@@ -116,6 +186,10 @@ export const getAdminEventSetupData = createServerFn({ method: 'GET' }).handler(
           boardVersion: board?.version ?? null,
           nextStatuses: getNextEventStatuses(event.status),
           readinessIssues,
+          canManageTeams:
+            canEditBoardDefinition(event.status) || event.status === 'active',
+          teams: teamRows,
+          unassignedUsers,
         }
       }),
     )
@@ -123,6 +197,11 @@ export const getAdminEventSetupData = createServerFn({ method: 'GET' }).handler(
     return {
       auth,
       events: eventRows,
+      users: users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      })),
     }
   },
 )
@@ -229,4 +308,53 @@ export const transitionEventStatus = createServerFn({ method: 'POST' })
     }
 
     return updatedEvent
+  })
+
+export const createEventTeam = createServerFn({ method: 'POST' })
+  .inputValidator((input: TeamInput) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    await requireManageableEvent(data.eventId)
+
+    try {
+      return await createTeam({
+        event_id: data.eventId,
+        name: normalizeTeamName(data.name),
+      })
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /teams_event_id_name_unique|duplicate key/i.test(error.message)
+      ) {
+        throw new Error('Team name must be unique within the event')
+      }
+
+      throw error
+    }
+  })
+
+export const assignUserToEventTeam = createServerFn({ method: 'POST' })
+  .inputValidator((input: TeamAssignmentInput) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    await requireManageableEvent(data.eventId)
+
+    const team = await findTeamById(data.teamId)
+
+    if (!team || team.event_id !== data.eventId) {
+      throw new Error('Team does not belong to the selected event')
+    }
+
+    const users = await listUsers()
+    const user = users.find((candidate) => candidate.id === data.userId)
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    return assignTeamMembership({
+      event_id: data.eventId,
+      team_id: data.teamId,
+      user_id: data.userId,
+    })
   })

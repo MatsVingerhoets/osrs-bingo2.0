@@ -35,6 +35,14 @@ export async function listTeamsByEvent(eventId: string) {
     .execute()
 }
 
+export async function findTeamById(teamId: string) {
+  return getDb()
+    .selectFrom('teams')
+    .selectAll()
+    .where('id', '=', teamId)
+    .executeTakeFirst()
+}
+
 export async function addTeamMembership(
   input: AddMembershipInput,
 ): Promise<TeamMembership> {
@@ -47,6 +55,28 @@ export async function addTeamMembership(
       created_at: timestamp,
       updated_at: timestamp,
     })
+    .returningAll()
+    .executeTakeFirstOrThrow()
+}
+
+export async function assignTeamMembership(
+  input: AddMembershipInput,
+): Promise<TeamMembership> {
+  const timestamp = new Date().toISOString()
+
+  return getDb()
+    .insertInto('team_memberships')
+    .values({
+      ...input,
+      created_at: timestamp,
+      updated_at: timestamp,
+    })
+    .onConflict((conflict) =>
+      conflict.columns(['event_id', 'user_id']).doUpdateSet({
+        team_id: input.team_id,
+        updated_at: timestamp,
+      }),
+    )
     .returningAll()
     .executeTakeFirstOrThrow()
 }

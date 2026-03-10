@@ -1,7 +1,9 @@
 import { useState, useTransition } from 'react'
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import {
+  assignUserToEventTeam,
   createDraftEvent,
+  createEventTeam,
   getAdminEventSetupData,
   transitionEventStatus,
   updateDraftEvent,
@@ -134,6 +136,53 @@ function AdminPage() {
         submissionError instanceof Error
           ? submissionError.message
           : 'Could not change event status',
+      )
+    }
+  }
+
+  async function handleCreateTeam(formData: FormData) {
+    setError(null)
+    setFeedback(null)
+
+    try {
+      await createEventTeam({
+        data: {
+          eventId: String(formData.get('eventId') ?? ''),
+          name: String(formData.get('name') ?? ''),
+        },
+      })
+
+      setFeedback('Team created.')
+      refreshPage()
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : 'Could not create team',
+      )
+    }
+  }
+
+  async function handleAssignUser(formData: FormData) {
+    setError(null)
+    setFeedback(null)
+
+    try {
+      await assignUserToEventTeam({
+        data: {
+          eventId: String(formData.get('eventId') ?? ''),
+          teamId: String(formData.get('teamId') ?? ''),
+          userId: String(formData.get('userId') ?? ''),
+        },
+      })
+
+      setFeedback('Team membership updated.')
+      refreshPage()
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : 'Could not update team membership',
       )
     }
   }
@@ -422,6 +471,225 @@ function AdminPage() {
                     : 'This event is archived and remains read only.'}
               </section>
             )}
+
+            <div className="mt-8 grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
+              <section className="rounded-3xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.68)] p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-stone-900">
+                      Teams
+                    </p>
+                    <p className="mt-1 text-sm text-stone-700">
+                      {eventRow.teams.length} teams configured for this event.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-1 text-xs font-semibold text-stone-600">
+                    {eventRow.canManageTeams ? 'Editable' : 'Read only'}
+                  </span>
+                </div>
+
+                {eventRow.canManageTeams ? (
+                  <form
+                    className="mt-5 flex flex-col gap-3 sm:flex-row"
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void handleCreateTeam(new FormData(event.currentTarget))
+                    }}
+                  >
+                    <input type="hidden" name="eventId" value={eventRow.id} />
+                    <input
+                      name="name"
+                      type="text"
+                      placeholder="New team name"
+                      required
+                      className="min-w-0 flex-1 rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-3 text-sm text-stone-900 outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="rounded-full border border-[rgba(87,57,24,0.18)] bg-[#97510f] px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Add team
+                    </button>
+                  </form>
+                ) : null}
+
+                <div className="mt-5 space-y-4">
+                  {eventRow.teams.length === 0 ? (
+                    <p className="text-sm text-stone-700">
+                      No teams yet for this event.
+                    </p>
+                  ) : (
+                    eventRow.teams.map((team) => (
+                      <article
+                        key={team.id}
+                        className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-white/70 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-stone-900">
+                              {team.name}
+                            </p>
+                            <p className="text-sm text-stone-600">
+                              {team.memberCount} members
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                          {team.members.length === 0 ? (
+                            <p className="text-sm text-stone-600">
+                              No members assigned.
+                            </p>
+                          ) : (
+                            team.members.map((member) => (
+                              <div
+                                key={member.membershipId}
+                                className="rounded-2xl border border-[rgba(87,57,24,0.1)] bg-[rgba(255,248,238,0.72)] p-3"
+                              >
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                  <div>
+                                    <p className="text-sm font-medium text-stone-900">
+                                      {member.name}
+                                    </p>
+                                    <p className="text-sm text-stone-600">
+                                      {member.email}
+                                    </p>
+                                  </div>
+                                  {eventRow.canManageTeams ? (
+                                    <form
+                                      className="flex flex-col gap-2 sm:flex-row"
+                                      onSubmit={(event) => {
+                                        event.preventDefault()
+                                        void handleAssignUser(
+                                          new FormData(event.currentTarget),
+                                        )
+                                      }}
+                                    >
+                                      <input
+                                        type="hidden"
+                                        name="eventId"
+                                        value={eventRow.id}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="userId"
+                                        value={member.userId}
+                                      />
+                                      <select
+                                        name="teamId"
+                                        defaultValue={team.id}
+                                        className="rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-2.5 text-sm text-stone-900 outline-none"
+                                      >
+                                        {eventRow.teams.map((teamOption) => (
+                                          <option
+                                            key={teamOption.id}
+                                            value={teamOption.id}
+                                          >
+                                            {teamOption.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <button
+                                        type="submit"
+                                        disabled={isPending}
+                                        className="rounded-full border border-[rgba(87,57,24,0.18)] bg-[rgba(255,248,238,0.92)] px-4 py-2.5 text-sm font-semibold text-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        Move
+                                      </button>
+                                    </form>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.68)] p-6">
+                <p className="text-sm font-semibold text-stone-900">
+                  Unassigned users
+                </p>
+                <p className="mt-1 text-sm text-stone-700">
+                  Users can stay unassigned until you place them on a team for
+                  this event.
+                </p>
+
+                <div className="mt-5 space-y-3">
+                  {eventRow.unassignedUsers.length === 0 ? (
+                    <p className="text-sm text-stone-600">
+                      Everyone is currently assigned.
+                    </p>
+                  ) : (
+                    eventRow.unassignedUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-white/70 p-4"
+                      >
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-stone-900">
+                              {user.name}
+                            </p>
+                            <p className="text-sm text-stone-600">
+                              {user.email}
+                            </p>
+                          </div>
+                          {eventRow.canManageTeams && eventRow.teams.length > 0 ? (
+                            <form
+                              className="flex flex-col gap-2 sm:flex-row"
+                              onSubmit={(event) => {
+                                event.preventDefault()
+                                void handleAssignUser(
+                                  new FormData(event.currentTarget),
+                                )
+                              }}
+                            >
+                              <input
+                                type="hidden"
+                                name="eventId"
+                                value={eventRow.id}
+                              />
+                              <input type="hidden" name="userId" value={user.id} />
+                              <select
+                                name="teamId"
+                                required
+                                defaultValue=""
+                                className="rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-2.5 text-sm text-stone-900 outline-none"
+                              >
+                                <option value="" disabled>
+                                  Select team
+                                </option>
+                                {eventRow.teams.map((team) => (
+                                  <option key={team.id} value={team.id}>
+                                    {team.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="submit"
+                                disabled={isPending}
+                                className="rounded-full border border-[rgba(87,57,24,0.18)] bg-[rgba(255,248,238,0.92)] px-4 py-2.5 text-sm font-semibold text-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Assign
+                              </button>
+                            </form>
+                          ) : eventRow.teams.length === 0 ? (
+                            <p className="text-sm text-stone-600">
+                              Create a team first.
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+            </div>
           </article>
         ))}
       </section>
