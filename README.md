@@ -31,6 +31,7 @@ npm run dev
 - `npm run dev` starts the TanStack Start dev server on port `3000`
 - `npm run build` builds the production server and client bundles
 - `npm run preview` serves the production build locally
+- `npm run db:migrate` runs the Kysely migrations against `DATABASE_URL`
 - `npm run lint` runs ESLint
 - `npm run typecheck` runs TypeScript without emitting files
 - `npm run check` runs lint and typecheck together
@@ -59,7 +60,7 @@ The devcontainer's `docker-compose.yml` already loads the root `.env` file. Phas
 | `KEYCLOAK_ISSUER_URL` | Keycloak realm issuer URL |
 | `KEYCLOAK_CLIENT_ID` | OIDC client ID |
 | `KEYCLOAK_CLIENT_SECRET` | OIDC client secret |
-| `KEYCLOAK_USERNAME_CLAIM` | Username-style claim to map into the local `username` field |
+| `KEYCLOAK_USERNAME_CLAIM` | Username-style claim to map into the local `name` field |
 
 These auth and database variables are parsed in a predictable location now, but they are not required for the Phase 1 app shell to boot.
 
@@ -77,6 +78,10 @@ src/
     completions/
     events/
     teams/
+  models/
+  repositories/
+  server/
+    auth/
   lib/
     db/
     env/
@@ -90,4 +95,4 @@ src/
 - `src/lib/env/public.ts` is the client-safe env surface.
 - `src/lib/env/server.ts` is the server-only env surface.
 - Future auth and database work should import those modules instead of reading `process.env` ad hoc.
-- Phase 2 currently uses a temporary file-backed local user store at `.data/auth-users.json` until the database layer lands in Phase 3.
+- Phase 3 replaces the temporary file-backed auth store with a database-backed user repository.

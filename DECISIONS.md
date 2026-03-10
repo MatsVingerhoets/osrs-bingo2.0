@@ -17,8 +17,10 @@
 - The app auto-provisions a local user on first successful login.
 - The app stores a local user model for app-owned data and relationships.
 - Keycloak roles are synchronized into the app roles array on login.
-- The app keeps separate local fields for `keycloakId`, `username`, and `email`.
-- The app does not use a separate `display_name` field in the first auth pass.
+- The app keeps separate local fields for `keycloak_id`, `name`, and `email`.
+- `keycloak_id` stores the Keycloak `sub` claim.
+- `keycloak_id` and `email` must be unique.
+- `name` is not unique.
 
 ### Role Mapping
 
@@ -51,7 +53,7 @@
 - Proof submission uses externally hosted image URLs.
 - Completion counts immediately on submit.
 - Admins can inspect and invalidate completions later.
-- Completion invalidation uses soft delete semantics.
+- Completion invalidation deletes the completion record.
 
 ### Documentation
 
@@ -128,4 +130,4 @@ Current leaning:
 
 ## Outstanding Questions
 
-- Exact Keycloak username-style claim to use for local `username`.
+- none currently

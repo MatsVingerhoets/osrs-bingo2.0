@@ -7,21 +7,21 @@ function getStringClaim(claims: Record<string, unknown>, claimName: string) {
 
 export function getKeycloakIdentity(claims: Record<string, unknown>) {
   const authEnv = requireAuthEnv()
-  const keycloakId = getStringClaim(claims, 'sub')
+  const keycloak_id = getStringClaim(claims, 'sub')
   const email = getStringClaim(claims, 'email')
-  const username =
+  const name =
     getStringClaim(claims, authEnv.keycloakUsernameClaim) ??
     getStringClaim(claims, 'preferred_username') ??
     getStringClaim(claims, 'username') ??
     (email ? email.split('@')[0] : undefined)
 
-  if (!keycloakId || !email || !username) {
+  if (!keycloak_id || !email || !name) {
     throw new Error('Keycloak callback is missing required identity claims')
   }
 
   return {
-    keycloakId,
-    username,
+    keycloak_id,
+    name,
     email,
   }
 }

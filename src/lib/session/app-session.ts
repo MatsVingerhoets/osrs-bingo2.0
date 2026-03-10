@@ -6,7 +6,7 @@ import {
   useSession,
 } from '@tanstack/react-start/server'
 import { serverEnv } from '#/lib/env/server'
-import type { AppRole } from '#/features/auth/auth-model'
+import type { AppRole } from '#/models/auth'
 
 export interface AppSessionData {
   userId?: string

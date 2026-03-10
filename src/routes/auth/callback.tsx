@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getKeycloakIdentity } from '#/features/auth/server/keycloak-identity'
-import { redirectResponse } from '#/features/auth/server/redirect-response'
-import { mapClientRolesToAppRoles } from '#/features/auth/server/role-mapping'
-import { sanitizeReturnTo } from '#/features/auth/server/return-to'
-import { upsertUserFromKeycloak } from '#/features/auth/server/user-store'
+import { getKeycloakIdentity } from '#/server/auth/keycloak-identity'
+import { redirectResponse } from '#/server/auth/redirect-response'
+import { mapClientRolesToAppRoles } from '#/server/auth/role-mapping'
+import { sanitizeReturnTo } from '#/server/auth/return-to'
 import { requireAuthEnv } from '#/lib/env/server'
 import { exchangeAuthorizationCode } from '#/lib/keycloak/oidc-client'
+import { upsertUserFromKeycloak } from '#/repositories/user-repository'
 import { getOidcFlowSession, saveAppSession } from '#/lib/session/app-session'
 
 export const Route = createFileRoute('/auth/callback')({

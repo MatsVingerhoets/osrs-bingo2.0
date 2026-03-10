@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { redirectResponse } from '#/features/auth/server/redirect-response'
-import { sanitizeReturnTo } from '#/features/auth/server/return-to'
+import { redirectResponse } from '#/server/auth/redirect-response'
+import { sanitizeReturnTo } from '#/server/auth/return-to'
 import { buildLogoutUrl } from '#/lib/keycloak/oidc-client'
 import {
   clearAppSession,

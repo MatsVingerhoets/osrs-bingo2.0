@@ -1,3 +1,9 @@
+try {
+  process.loadEnvFile()
+} catch {
+  // Container/runtime environments may provide vars without a local .env file.
+}
+
 function readOptional(key: string) {
   const value = process.env[key]
 

@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { getCurrentAuth } from '#/features/auth/server/current-auth'
+import { getCurrentAuth } from '#/server/auth/current-auth'
 
 export const Route = createFileRoute('/admin')({
   beforeLoad: async ({ location }) => {
@@ -35,7 +35,7 @@ function AdminPage() {
           Protected administration route
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-stone-700">
-          You are signed in as <strong>{auth.username}</strong> and your current
+          You are signed in as <strong>{auth.name}</strong> and your current
           roles are <strong>{auth.roles.join(', ')}</strong>.
         </p>
       </section>

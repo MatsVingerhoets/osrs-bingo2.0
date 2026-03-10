@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { clearAppSession, getAppSession } from '#/lib/session/app-session'
-import { findUserById } from './user-store'
+import { findUserById } from '#/repositories/user-repository'
 
 export const getCurrentAuth = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -21,7 +21,7 @@ export const getCurrentAuth = createServerFn({ method: 'GET' }).handler(
 
     return {
       id: user.id,
-      username: user.username,
+      name: user.name,
       email: user.email,
       roles,
     }

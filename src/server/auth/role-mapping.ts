@@ -1,4 +1,4 @@
-import type { AppRole } from '../auth-model'
+import type { AppRole } from '#/models/auth'
 
 const KEYCLOAK_ROLE_TO_APP_ROLE: Record<string, AppRole> = {
   osrs_bingo_admin: 'ADMIN',

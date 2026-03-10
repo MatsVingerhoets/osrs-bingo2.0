@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { getCurrentAuth } from '#/features/auth/server/current-auth'
+import { getCurrentAuth } from '#/server/auth/current-auth'
 import { publicEnv } from '#/lib/env/public'
 import appCss from '../styles.css?url'
 

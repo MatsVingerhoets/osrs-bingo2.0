@@ -108,7 +108,8 @@ Establish Keycloak OIDC login and a stable local session model.
 
 ### Notes
 
-- confirm exact claim fields to use for `keycloak_subject`, `username`, and `email`
+- map `keycloak_id` from the Keycloak `sub` claim
+- use local user fields `keycloak_id`, `name`, and `email`
 - keep the auth integration minimal at first; avoid feature creep into identity management
 - store local app roles as an array rather than a single resolved role
 
@@ -140,17 +141,12 @@ Create the initial schema and typed data access layer aligned with the `2.0` dom
 - migrations run successfully on a fresh database
 - one user can belong to only one team per event
 - one team can complete each tile at most once
-- local user records support Keycloak subject mapping
+- local user records support unique Keycloak `sub` mapping and unique emails
 - the data access layer is typed and usable by server functions
 
 ### Risks
 
-- invalidation strategy affects uniqueness design
 - overly generic schema makes feature work slower
-
-### Open Decision
-
-- exact query and uniqueness strategy for soft-invalidated completions
 
 ## Phase 4: Canonical Board Import
 
@@ -440,7 +436,7 @@ Work that should stay coordinated by one primary implementer:
 
 ## Open Questions To Resolve During Implementation
 
-- what exact Keycloak claim fields will be used for local user provisioning
+- none currently
 
 ## Definition Of Ready For Coding
 

@@ -118,8 +118,8 @@ App-owned profile row synchronized from Keycloak.
 Suggested fields:
 
 - `id`
-- `keycloak_subject`
-- `username`
+- `keycloak_id`
+- `name`
 - `email`
 - `roles`
 - `created_at`
@@ -127,7 +127,9 @@ Suggested fields:
 
 Notes:
 
-- `keycloak_subject` should be unique.
+- `keycloak_id` stores the Keycloak `sub` claim and should be unique.
+- `email` should be unique.
+- `name` is not unique.
 - `roles` stores the resolved app authorization levels as an array.
 
 ### events
@@ -233,16 +235,15 @@ Suggested fields:
 - `completed_by_user_id`
 - `proof_url`
 - `completed_at`
-- `invalidated_at`
 
 Constraints:
 
-- unique active completion per `(team_id, board_tile_id)`
+- unique `(team_id, board_tile_id)`
 
 Implementation note:
 
-- soft invalidation is used in the first release
-- uniqueness must account for only non-invalidated rows
+- admins may delete invalid completions after review
+- deleting a completion reopens that tile for a future resubmission by the team
 
 ## Board Data Strategy
 

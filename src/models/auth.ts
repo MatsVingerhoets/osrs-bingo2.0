@@ -4,8 +4,8 @@ export type AppRole = (typeof APP_ROLE_VALUES)[number]
 
 export interface AuthUser {
   id: string
-  keycloakId: string
-  username: string
+  keycloak_id: string
+  name: string
   email: string
   roles: AppRole[]
   createdAt: string
@@ -13,8 +13,8 @@ export interface AuthUser {
 }
 
 export interface ProvisionAuthUserInput {
-  keycloakId: string
-  username: string
+  keycloak_id: string
+  name: string
   email: string
   roles: AppRole[]
 }
