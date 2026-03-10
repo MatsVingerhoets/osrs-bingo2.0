@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MockupsIndexRouteImport } from './routes/mockups/index'
+import { Route as MockupsBRouteImport } from './routes/mockups/b'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -23,6 +25,16 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MockupsIndexRoute = MockupsIndexRouteImport.update({
+  id: '/mockups/',
+  path: '/mockups/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MockupsBRoute = MockupsBRouteImport.update({
+  id: '/mockups/b',
+  path: '/mockups/b',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLogoutRoute = AuthLogoutRouteImport.update({
@@ -47,6 +59,8 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/mockups/b': typeof MockupsBRoute
+  '/mockups/': typeof MockupsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/mockups/b': typeof MockupsBRoute
+  '/mockups': typeof MockupsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +78,28 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/mockups/b': typeof MockupsBRoute
+  '/mockups/': typeof MockupsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/auth/callback' | '/auth/login' | '/auth/logout'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/mockups/b'
+    | '/mockups/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/auth/callback' | '/auth/login' | '/auth/logout'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/mockups/b'
+    | '/mockups'
   id:
     | '__root__'
     | '/'
@@ -75,6 +107,8 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/mockups/b'
+    | '/mockups/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +117,8 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  MockupsBRoute: typeof MockupsBRoute
+  MockupsIndexRoute: typeof MockupsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +135,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mockups/': {
+      id: '/mockups/'
+      path: '/mockups'
+      fullPath: '/mockups/'
+      preLoaderRoute: typeof MockupsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mockups/b': {
+      id: '/mockups/b'
+      path: '/mockups/b'
+      fullPath: '/mockups/b'
+      preLoaderRoute: typeof MockupsBRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/logout': {
@@ -131,6 +181,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  MockupsBRoute: MockupsBRoute,
+  MockupsIndexRoute: MockupsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

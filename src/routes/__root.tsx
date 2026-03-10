@@ -57,7 +57,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(199,123,42,0.24),transparent_30%),radial-gradient(circle_at_right_20%,rgba(98,117,67,0.18),transparent_32%),linear-gradient(180deg,#f8ecd7,#efe3cf)] font-sans text-[#1f160d] antialiased before:pointer-events-none before:fixed before:inset-0 before:bg-[linear-gradient(rgba(120,85,43,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(120,85,43,0.05)_1px,transparent_1px)] before:bg-[size:26px_26px] before:[mask-image:radial-gradient(circle_at_50%_15%,black,transparent_78%)]">
+      <body className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(199,123,42,0.24),transparent_30%),radial-gradient(circle_at_right_20%,rgba(98,117,67,0.18),transparent_32%),linear-gradient(180deg,#f8ecd7,#efe3cf)] font-sans text-[#1f160d] antialiased">
         {children}
         <TanStackDevtools
           config={{ position: 'bottom-right' }}

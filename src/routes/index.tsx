@@ -6,23 +6,6 @@ import { submitTeamCompletion } from '#/features/completions/submit-team-complet
 import { getCurrentEventContext } from '#/features/events/current-event-context'
 import { getCurrentAuth } from '#/server/auth/current-auth'
 
-const phaseItems = [
-  'The player board renders the honeycomb layout from runtime board rows.',
-  'Hidden, unlocked, and completed tiles have distinct interaction states.',
-  'Unlocked tiles open a proof submission panel.',
-  'Successful submissions refresh the current event board state.',
-  'Completed tiles show proof and attribution details.',
-]
-
-const roadmapPhases = [
-  { phase: 4, label: 'Canonical board import', status: 'done' },
-  { phase: 5, label: 'Pure domain rules', status: 'done' },
-  { phase: 6, label: 'Current event resolution', status: 'done' },
-  { phase: 7, label: 'Player board experience', status: 'current' },
-  { phase: 8, label: 'Admin event setup flow', status: 'next' },
-  { phase: 9, label: 'Team management and assignment', status: 'next' },
-] as const
-
 export const Route = createFileRoute('/')({
   loader: async () => ({
     auth: await getCurrentAuth(),
@@ -142,7 +125,13 @@ function HomePage() {
             Phase 7 Status
           </p>
           <ul className="mt-4 space-y-3 text-sm text-stone-700">
-            {phaseItems.map((item) => (
+            {[
+              'The player board renders the honeycomb layout from runtime board rows.',
+              'Hidden, unlocked, and completed tiles have distinct interaction states.',
+              'Unlocked tiles open a proof submission panel.',
+              'Successful submissions refresh the current event board state.',
+              'Completed tiles show proof and attribution details.',
+            ].map((item) => (
               <li key={item} className="flex gap-3">
                 <span className="mt-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
                 <span>{item}</span>
@@ -169,7 +158,14 @@ function HomePage() {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {roadmapPhases.map((item) => (
+          {[
+            { phase: 4, label: 'Canonical board import', status: 'done' },
+            { phase: 5, label: 'Pure domain rules', status: 'done' },
+            { phase: 6, label: 'Current event resolution', status: 'done' },
+            { phase: 7, label: 'Player board experience', status: 'current' },
+            { phase: 8, label: 'Admin event setup flow', status: 'next' },
+            { phase: 9, label: 'Team management and assignment', status: 'next' },
+          ].map((item) => (
             <div
               key={item.phase}
               className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4"
@@ -252,36 +248,37 @@ function HomePage() {
       ) : null}
 
       {currentEvent.kind === 'ready' ? (
-        <section className="mt-8 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-                  Current Board
-                </p>
-                <h2 className="mt-3 text-2xl font-semibold text-stone-950">
-                  {currentEvent.event.name} · {currentEvent.team.name}
-                </h2>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <MetricCard
-                  label="Visible"
-                  value={currentEvent.board.visibleTileCount}
-                />
-                <MetricCard
-                  label="Completed"
-                  value={currentEvent.board.completedTileCount}
-                />
-                <MetricCard label="Score" value={currentEvent.board.score} />
-              </div>
-            </div>
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
+          <div className="min-w-0 space-y-5">
+            <section className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.88),rgba(255,250,240,0.68))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_18px_50px_rgba(87,57,24,0.08)] backdrop-blur-[10px] sm:p-7">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
+                    Current Event
+                  </p>
+                  <h2 className="mt-3 text-2xl font-semibold text-stone-950">
+                    {currentEvent.event.name}
+                  </h2>
+                  <p className="mt-2 text-sm text-stone-600 sm:text-base">
+                    Team {currentEvent.team.name} is live on the honeycomb board.
+                  </p>
+                </div>
 
-            <p className="mt-5 max-w-3xl text-sm leading-7 text-stone-700 sm:text-base">
-              Select an unlocked tile to submit proof, or open a completed tile
-              to inspect its proof and attribution details.
-            </p>
+                <div className="grid grid-cols-3 gap-3 sm:min-w-[22rem]">
+                  <MetricCard
+                    label="Visible"
+                    value={currentEvent.board.visibleTileCount}
+                  />
+                  <MetricCard
+                    label="Completed"
+                    value={currentEvent.board.completedTileCount}
+                  />
+                  <MetricCard label="Score" value={currentEvent.board.score} />
+                </div>
+              </div>
+            </section>
 
-            <div className="mt-6">
+            <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.82),rgba(255,250,240,0.62))] p-4 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.08)] backdrop-blur-[10px] sm:p-5">
               <PlayerBoard
                 layout={currentEvent.board.layout}
                 tiles={currentEvent.board.tiles}
@@ -290,8 +287,8 @@ function HomePage() {
                   setSelectedTileKey(tile.tileKey)
                 }}
               />
-            </div>
-          </article>
+            </article>
+          </div>
 
           <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
             <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
@@ -312,6 +309,11 @@ function HomePage() {
                 value={String(currentEvent.board.totalTileCount)}
               />
             </div>
+
+            <p className="mt-5 text-sm leading-6 text-stone-600">
+              Select an unlocked tile to submit proof, or open a completed tile
+              to inspect proof and attribution details.
+            </p>
 
             <section className="mt-6 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">

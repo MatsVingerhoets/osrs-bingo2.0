@@ -13,7 +13,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain a Ring of Endurance',
-    url: '/images/001.webp',
+    url: '/images/tiles/001.webp',
     id: 1,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -21,7 +21,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Complete a Noxious Halberd',
-    url: '/images/002.webp',
+    url: '/images/tiles/002.webp',
     id: 2,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -29,7 +29,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain the Metamorphic Dust from CoX CM',
-    url: '/images/003.webp',
+    url: '/images/tiles/003.webp',
     id: 3,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -37,7 +37,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain all the pieces of the Voidwaker',
-    url: '/images/004.webp',
+    url: '/images/tiles/004.webp',
     id: 4,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -45,7 +45,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Complete the full Sunfire armor set from Colosseum',
-    url: '/images/005.webp',
+    url: '/images/tiles/005.webp',
     id: 5,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -53,7 +53,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Kill any one of the Awakened DT2 bosses',
-    url: '/images/006.webp',
+    url: '/images/tiles/006.webp',
     id: 6,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -61,7 +61,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: "Obtain any Boss pet that isn't from a Raid (not Chaos Elemental)",
-    url: '/images/007.webp',
+    url: '/images/tiles/007.webp',
     id: 7,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -70,7 +70,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
     points: 16,
     label:
       'Get any piece of armor from Raids (Justy, Masori, Ancestral, or Twisted Buckler)',
-    url: '/images/008.webp',
+    url: '/images/tiles/008.webp',
     id: 8,
     color: 'bg-purple-500',
     adjacentTiles: [1, 2, 7],
@@ -78,7 +78,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: "Obtain the Huntsman's Kit",
-    url: '/images/009.webp',
+    url: '/images/tiles/009.webp',
     id: 9,
     color: 'bg-purple-500',
     adjacentTiles: [2, 3],
@@ -86,7 +86,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Obtain a unique from an Elite Clue Scroll reward casket',
-    url: '/images/010.webp',
+    url: '/images/tiles/010.webp',
     id: 10,
     color: 'bg-purple-500',
     adjacentTiles: [3, 4],
@@ -94,7 +94,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Obtain some Dragon Limbs',
-    url: '/images/011.webp',
+    url: '/images/tiles/011.webp',
     id: 11,
     color: 'bg-purple-500',
     adjacentTiles: [4, 5],
@@ -102,7 +102,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Obtain an Araxyte fang',
-    url: '/images/012.webp',
+    url: '/images/tiles/012.webp',
     id: 12,
     color: 'bg-purple-500',
     adjacentTiles: [5, 6, 13],
@@ -110,7 +110,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain any Raids pet',
-    url: '/images/013.webp',
+    url: '/images/tiles/013.webp',
     id: 13,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -118,7 +118,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain any Skilling pet (non-minigame)',
-    url: '/images/014.webp',
+    url: '/images/tiles/014.webp',
     id: 14,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -126,7 +126,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Get a unique drop from Nex',
-    url: '/images/015.webp',
+    url: '/images/tiles/015.webp',
     id: 15,
     color: 'bg-purple-500',
     adjacentTiles: [7, 14],
@@ -134,7 +134,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 8,
     label: 'Get a Zenyte shard',
-    url: '/images/016.webp',
+    url: '/images/tiles/016.webp',
     id: 16,
     color: 'bg-red-500',
     adjacentTiles: [8, 9, 15],
@@ -142,7 +142,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 8,
     label: 'Get a Mimic drop',
-    url: '/images/017.webp',
+    url: '/images/tiles/017.webp',
     id: 17,
     color: 'bg-red-500',
     adjacentTiles: [9, 10],
@@ -150,7 +150,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 8,
     label: 'Get an Unsired',
-    url: '/images/018.webp',
+    url: '/images/tiles/018.webp',
     id: 18,
     color: 'bg-red-500',
     adjacentTiles: [10, 11],
@@ -158,7 +158,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 8,
     label: 'Complete the fight caves',
-    url: '/images/019.webp',
+    url: '/images/tiles/019.webp',
     id: 19,
     color: 'bg-red-500',
     adjacentTiles: [11, 12, 20],
@@ -166,7 +166,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Obtain a blood shard',
-    url: '/images/020.webp',
+    url: '/images/tiles/020.webp',
     id: 20,
     color: 'bg-purple-500',
     adjacentTiles: [13, 21],
@@ -174,7 +174,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Complete a full Moons of Peril set, including weapon and armour',
-    url: '/images/021.webp',
+    url: '/images/tiles/021.webp',
     id: 21,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -182,7 +182,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Complete a full Barrows set, including weapon and armour',
-    url: '/images/022.webp',
+    url: '/images/tiles/022.webp',
     id: 22,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -190,7 +190,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Obtain one of the Wilderness Rings',
-    url: '/images/023.webp',
+    url: '/images/tiles/023.webp',
     id: 23,
     color: 'bg-purple-500',
     adjacentTiles: [14, 22],
@@ -198,7 +198,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 8,
     label: 'Get any of the Ancient Statuettes or Ancient Crystal from Revs',
-    url: '/images/024.webp',
+    url: '/images/tiles/024.webp',
     id: 24,
     color: 'bg-red-500',
     adjacentTiles: [15, 23],
@@ -206,7 +206,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 4,
     label: 'Receive an Ancient Shard from Skotizo',
-    url: '/images/025.webp',
+    url: '/images/tiles/025.webp',
     id: 25,
     color: 'bg-blue-300',
     adjacentTiles: [16, 17, 24],
@@ -214,7 +214,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 4,
     label: 'Complete a Master Clue',
-    url: '/images/026.webp',
+    url: '/images/tiles/026.webp',
     id: 26,
     color: 'bg-blue-300',
     adjacentTiles: [17, 18],
@@ -222,7 +222,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 4,
     label: 'Obtain a pair of Dragon Boots',
-    url: '/images/027.webp',
+    url: '/images/tiles/027.webp',
     id: 27,
     color: 'bg-blue-300',
     adjacentTiles: [18, 19, 28],
@@ -230,7 +230,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 8,
     label: 'Obtain a Zalcano shard',
-    url: '/images/028.webp',
+    url: '/images/tiles/028.webp',
     id: 28,
     color: 'bg-red-500',
     adjacentTiles: [20, 29],
@@ -238,7 +238,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 16,
     label: 'Obtain an upgrade to a wilderness weapon',
-    url: '/images/029.webp',
+    url: '/images/tiles/029.webp',
     id: 29,
     color: 'bg-purple-500',
     adjacentTiles: [21, 30],
@@ -246,7 +246,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain a Colossal Blade',
-    url: '/images/030.webp',
+    url: '/images/tiles/030.webp',
     id: 30,
     color: 'bg-yellow-500',
     adjacentTiles: [],
@@ -254,7 +254,7 @@ export const legacyCanonicalTiles: LegacyCanonicalTile[] = [
   {
     points: 32,
     label: 'Obtain a mutagen from Zulrah',
-    url: '/images/031.webp',
+    url: '/images/tiles/031.webp',
     id: 31,
     color: 'bg-yellow-500',
     adjacentTiles: [],
