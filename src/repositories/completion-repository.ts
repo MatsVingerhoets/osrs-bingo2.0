@@ -31,6 +31,14 @@ export async function deleteTeamTileCompletion(id: string) {
     .executeTakeFirst()
 }
 
+export async function findTeamTileCompletionById(id: string) {
+  return getDb()
+    .selectFrom('team_tile_completions')
+    .selectAll()
+    .where('id', '=', id)
+    .executeTakeFirst()
+}
+
 export async function listCompletionInspectionRows(eventId: string) {
   return getDb()
     .selectFrom('team_tile_completions')

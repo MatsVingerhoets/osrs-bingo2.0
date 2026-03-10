@@ -5,6 +5,7 @@ import {
   createDraftEvent,
   createEventTeam,
   getAdminEventSetupData,
+  invalidateCompletion,
   transitionEventStatus,
   updateDraftEvent,
 } from '#/features/admin/event-setup'
@@ -51,12 +52,32 @@ function formatStatusLabel(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
 
+const EMPTY_COMPLETION_FILTERS = {
+  teamId: '',
+  userId: '',
+  tileQuery: '',
+  startAt: '',
+  endAt: '',
+} as const
+
 function AdminPage() {
   const router = useRouter()
   const { auth } = Route.useRouteContext()
   const { events } = Route.useLoaderData()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [completionFilters, setCompletionFilters] = useState<
+    Record<
+      string,
+      {
+        teamId: string
+        userId: string
+        tileQuery: string
+        startAt: string
+        endAt: string
+      }
+    >
+  >({})
   const [isPending, startTransition] = useTransition()
 
   function refreshPage() {
@@ -187,6 +208,46 @@ function AdminPage() {
     }
   }
 
+  async function handleInvalidateCompletion(completionId: string) {
+    setError(null)
+    setFeedback(null)
+
+    try {
+      await invalidateCompletion({
+        data: {
+          completionId,
+        },
+      })
+
+      setFeedback('Completion invalidated.')
+      refreshPage()
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : 'Could not invalidate completion',
+      )
+    }
+  }
+
+  function getCompletionFilterState(eventId: string) {
+    return completionFilters[eventId] ?? EMPTY_COMPLETION_FILTERS
+  }
+
+  function updateCompletionFilter(
+    eventId: string,
+    field: keyof typeof EMPTY_COMPLETION_FILTERS,
+    value: string,
+  ) {
+    setCompletionFilters((current) => ({
+      ...current,
+      [eventId]: {
+        ...(current[eventId] ?? EMPTY_COMPLETION_FILTERS),
+        [field]: value,
+      },
+    }))
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10 sm:px-10">
       <section className="rounded-[2rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
@@ -312,11 +373,70 @@ function AdminPage() {
           </article>
         ) : null}
 
-        {events.map((eventRow) => (
-          <article
-            key={eventRow.id}
-            className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]"
-          >
+        {events.map((eventRow) => {
+          const filters = getCompletionFilterState(eventRow.id)
+          const filteredCompletions = eventRow.completions.filter(
+            (completion) => {
+              if (filters.teamId && completion.teamId !== filters.teamId) {
+                return false
+              }
+
+              if (
+                filters.userId &&
+                completion.completedByUserId !== filters.userId
+              ) {
+                return false
+              }
+
+              if (filters.tileQuery) {
+                const query = filters.tileQuery.trim().toLowerCase()
+                const matchesTile =
+                  completion.tileKey.toLowerCase().includes(query) ||
+                  completion.tileLabel.toLowerCase().includes(query)
+
+                if (!matchesTile) {
+                  return false
+                }
+              }
+
+              const completedAtMs = new Date(completion.completedAt).getTime()
+
+              if (filters.startAt) {
+                const startAtMs = new Date(filters.startAt).getTime()
+
+                if (!Number.isNaN(startAtMs) && completedAtMs < startAtMs) {
+                  return false
+                }
+              }
+
+              if (filters.endAt) {
+                const endAtMs = new Date(filters.endAt).getTime()
+
+                if (!Number.isNaN(endAtMs) && completedAtMs > endAtMs) {
+                  return false
+                }
+              }
+
+              return true
+            },
+          )
+
+          const completionUsers = eventRow.completions
+            .map((completion) => ({
+              id: completion.completedByUserId,
+              label: completion.submittedByName,
+            }))
+            .filter(
+              (user, index, users) =>
+                users.findIndex((candidate) => candidate.id === user.id) ===
+                index,
+            )
+
+          return (
+            <article
+              key={eventRow.id}
+              className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]"
+            >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -690,8 +810,215 @@ function AdminPage() {
                 </div>
               </section>
             </div>
+
+            <section className="mt-8 rounded-3xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.68)] p-6">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-stone-900">
+                    Completion inspection
+                  </p>
+                  <p className="mt-1 text-sm text-stone-700">
+                    Filter submissions by team, user, tile, or time and
+                    invalidate bad rows where the event still allows it.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-1 text-xs font-semibold text-stone-600">
+                  {eventRow.completions.length} submissions
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <label className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    Team
+                  </span>
+                  <select
+                    value={filters.teamId}
+                    onChange={(event) => {
+                      updateCompletionFilter(
+                        eventRow.id,
+                        'teamId',
+                        event.target.value,
+                      )
+                    }}
+                    className="w-full rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-3 text-sm text-stone-900 outline-none"
+                  >
+                    <option value="">All teams</option>
+                    {eventRow.teams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    User
+                  </span>
+                  <select
+                    value={filters.userId}
+                    onChange={(event) => {
+                      updateCompletionFilter(
+                        eventRow.id,
+                        'userId',
+                        event.target.value,
+                      )
+                    }}
+                    className="w-full rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-3 text-sm text-stone-900 outline-none"
+                  >
+                    <option value="">All users</option>
+                    {completionUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    Tile
+                  </span>
+                  <input
+                    type="text"
+                    value={filters.tileQuery}
+                    onChange={(event) => {
+                      updateCompletionFilter(
+                        eventRow.id,
+                        'tileQuery',
+                        event.target.value,
+                      )
+                    }}
+                    placeholder="Tile key or label"
+                    className="w-full rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-3 text-sm text-stone-900 outline-none"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    From
+                  </span>
+                  <input
+                    type="datetime-local"
+                    value={filters.startAt}
+                    onChange={(event) => {
+                      updateCompletionFilter(
+                        eventRow.id,
+                        'startAt',
+                        event.target.value,
+                      )
+                    }}
+                    className="w-full rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-3 text-sm text-stone-900 outline-none"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    To
+                  </span>
+                  <input
+                    type="datetime-local"
+                    value={filters.endAt}
+                    onChange={(event) => {
+                      updateCompletionFilter(
+                        eventRow.id,
+                        'endAt',
+                        event.target.value,
+                      )
+                    }}
+                    className="w-full rounded-2xl border border-[rgba(87,57,24,0.16)] bg-white/80 px-4 py-3 text-sm text-stone-900 outline-none"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-6 overflow-x-auto">
+                <table className="min-w-full border-separate border-spacing-y-3 text-left text-sm text-stone-700">
+                  <thead>
+                    <tr className="text-xs uppercase tracking-[0.2em] text-stone-500">
+                      <th className="px-3">Time</th>
+                      <th className="px-3">Team</th>
+                      <th className="px-3">User</th>
+                      <th className="px-3">Tile</th>
+                      <th className="px-3">Proof</th>
+                      <th className="px-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCompletions.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-white/70 px-4 py-5 text-center text-sm text-stone-600"
+                        >
+                          No submissions match the current filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCompletions.map((completion) => (
+                        <tr key={completion.id}>
+                          <td className="rounded-l-2xl border border-r-0 border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-4">
+                            {new Date(completion.completedAt).toLocaleString()}
+                          </td>
+                          <td className="border border-l-0 border-r-0 border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-4">
+                            {completion.teamName}
+                          </td>
+                          <td className="border border-l-0 border-r-0 border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-4">
+                            <p className="font-medium text-stone-900">
+                              {completion.submittedByName}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              {completion.submittedByEmail}
+                            </p>
+                          </td>
+                          <td className="border border-l-0 border-r-0 border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-4">
+                            <p className="font-medium text-stone-900">
+                              {completion.tileKey}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              {completion.tileLabel}
+                            </p>
+                          </td>
+                          <td className="border border-l-0 border-r-0 border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-4">
+                            <a
+                              href={completion.proofUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#97510f] underline"
+                            >
+                              Open proof
+                            </a>
+                          </td>
+                          <td className="rounded-r-2xl border border-l-0 border-[rgba(87,57,24,0.12)] bg-white/70 px-3 py-4">
+                            {eventRow.canInvalidateCompletions ? (
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => {
+                                  void handleInvalidateCompletion(
+                                    completion.id,
+                                  )
+                                }}
+                                className="rounded-full border border-[#9b3d26]/20 bg-[#9b3d26]/8 px-4 py-2 text-xs font-semibold text-[#7c2e1a] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Invalidate
+                              </button>
+                            ) : (
+                              <span className="text-xs text-stone-500">
+                                Locked
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </article>
-        ))}
+          )
+        })}
       </section>
     </main>
   )

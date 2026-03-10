@@ -6,8 +6,13 @@ import {
   getNextEventStatuses,
 } from '#/domain/event-setup'
 import { getCurrentAuth } from '#/server/auth/current-auth'
-import { canEditBoardDefinition } from '#/domain/event-state'
+import { canEditBoardDefinition, canInvalidateCompletion } from '#/domain/event-state'
 import { findBoardByEventId } from '#/repositories/board-repository'
+import {
+  deleteTeamTileCompletion,
+  findTeamTileCompletionById,
+  listCompletionInspectionRows,
+} from '#/repositories/completion-repository'
 import {
   createEvent,
   findEventById,
@@ -41,6 +46,10 @@ type TeamAssignmentInput = {
   eventId: string
   teamId: string
   userId: string
+}
+
+type InvalidateCompletionInput = {
+  completionId: string
 }
 
 function normalizeName(name: string) {
@@ -141,6 +150,7 @@ export const getAdminEventSetupData = createServerFn({ method: 'GET' }).handler(
         const board = await findBoardByEventId(event.id)
         const teams = await listTeamsByEvent(event.id)
         const memberships = await listTeamMembershipsByEvent(event.id)
+        const completions = await listCompletionInspectionRows(event.id)
         const readinessIssues =
           event.status === 'draft'
             ? getDraftEventReadinessIssues({
@@ -190,6 +200,21 @@ export const getAdminEventSetupData = createServerFn({ method: 'GET' }).handler(
             canEditBoardDefinition(event.status) || event.status === 'active',
           teams: teamRows,
           unassignedUsers,
+          canInvalidateCompletions: canInvalidateCompletion(event.status),
+          completions: completions.map((completion) => ({
+            id: completion.id,
+            eventId: completion.event_id,
+            teamId: completion.team_id,
+            teamName: completion.team_name,
+            boardTileId: completion.board_tile_id,
+            completedByUserId: completion.completed_by_user_id,
+            submittedByName: completion.submitted_by_name,
+            submittedByEmail: completion.submitted_by_email,
+            proofUrl: completion.proof_url,
+            completedAt: completion.completed_at,
+            tileLabel: completion.tile_label,
+            tileKey: completion.tile_key,
+          })),
         }
       }),
     )
@@ -357,4 +382,34 @@ export const assignUserToEventTeam = createServerFn({ method: 'POST' })
       team_id: data.teamId,
       user_id: data.userId,
     })
+  })
+
+export const invalidateCompletion = createServerFn({ method: 'POST' })
+  .inputValidator((input: InvalidateCompletionInput) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const completion = await findTeamTileCompletionById(data.completionId)
+
+    if (!completion) {
+      throw new Error('Completion not found')
+    }
+
+    const event = await findEventById(completion.event_id)
+
+    if (!event) {
+      throw new Error('Event not found')
+    }
+
+    if (!canInvalidateCompletion(event.status)) {
+      throw new Error('Completions can only be invalidated for active or completed events')
+    }
+
+    const deleted = await deleteTeamTileCompletion(completion.id)
+
+    if (!deleted) {
+      throw new Error('Completion could not be invalidated')
+    }
+
+    return deleted
   })
