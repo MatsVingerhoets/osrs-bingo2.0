@@ -40,6 +40,7 @@ type CurrentBoardTile = {
   tileKey: string
   label: string
   points: number
+  colorTier: string
   rowIndex: number
   columnIndex: number
   state: 'hidden' | 'unlocked' | 'completed'
@@ -54,6 +55,14 @@ type CurrentCompletion = {
   completedByUserId: string
   completedByName: string
   proofUrl: string
+}
+
+function toIsoString(value: string | Date | null) {
+  if (!value) {
+    return null
+  }
+
+  return value instanceof Date ? value.toISOString() : value
 }
 
 type CurrentEventContext =
@@ -143,7 +152,7 @@ function toEventSummary(
     id: event.id,
     name: event.name,
     status: event.status,
-    startTime: event.start_time,
+    startTime: toIsoString(event.start_time),
     durationMinutes: event.duration_minutes,
     boardKey: event.board_key,
   }
@@ -254,6 +263,7 @@ export const getCurrentEventContext = createServerFn({ method: 'GET' }).handler(
           tileKey: tile.tile_key,
           label: tile.label,
           points: tile.points,
+          colorTier: tile.color_tier,
           rowIndex: tile.row_index,
           columnIndex: tile.column_index,
           state: tileStateMap[tile.tile_key],
@@ -264,7 +274,7 @@ export const getCurrentEventContext = createServerFn({ method: 'GET' }).handler(
         tileKey: completion.tile_key,
         tileLabel: completion.tile_label,
         tilePoints: completion.tile_points,
-        completedAt: completion.completed_at,
+        completedAt: toIsoString(completion.completed_at) ?? '',
         completedByUserId: completion.completed_by_user_id,
         completedByName: completion.completed_by_name,
         proofUrl: completion.proof_url,
