@@ -10,6 +10,10 @@ import {
   updateDraftEvent,
 } from '#/features/admin/event-setup'
 import { getCurrentAuth } from '#/server/auth/current-auth'
+import {
+  getLoginRedirectHref,
+  isAdminRouteAuthorized,
+} from '#/server/auth/route-guards'
 
 export const Route = createFileRoute('/admin')({
   beforeLoad: async ({ location }) => {
@@ -17,11 +21,11 @@ export const Route = createFileRoute('/admin')({
 
     if (!auth) {
       throw redirect({
-        href: `/auth/login?returnTo=${encodeURIComponent(location.href)}`,
+        href: getLoginRedirectHref(location.href),
       })
     }
 
-    if (!auth.roles.includes('ADMIN')) {
+    if (!isAdminRouteAuthorized(auth)) {
       throw redirect({ to: '/' })
     }
 

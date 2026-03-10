@@ -9,6 +9,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { getCurrentAuth } from '#/server/auth/current-auth'
+import { getLoginRedirectHref } from '#/server/auth/route-guards'
 import { publicEnv } from '#/lib/env/public'
 import appCss from '../styles.css?url'
 
@@ -37,7 +38,7 @@ export const Route = createRootRoute({
 
     if (!auth) {
       throw redirect({
-        href: `/auth/login?returnTo=${encodeURIComponent(location.href)}`,
+        href: getLoginRedirectHref(location.href),
       })
     }
 
