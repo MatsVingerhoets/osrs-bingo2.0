@@ -1,6 +1,6 @@
 import { getDb } from '#/lib/db/client'
 import { importBoardForEvent } from '#/features/board/board-import'
-import type { Event, EventStatus, NewEvent } from '#/models/db'
+import type { Event, EventStatus, EventUpdate, NewEvent } from '#/models/db'
 
 type CreateEventInput = Pick<
   NewEvent,
@@ -39,6 +39,14 @@ export async function findEventById(id: string) {
     .executeTakeFirst()
 }
 
+export async function findEventByName(name: string) {
+  return getDb()
+    .selectFrom('events')
+    .selectAll()
+    .where('name', '=', name)
+    .executeTakeFirst()
+}
+
 export async function findEventByStatus(status: EventStatus) {
   return getDb()
     .selectFrom('events')
@@ -53,4 +61,21 @@ export async function listEvents() {
     .selectAll()
     .orderBy('created_at', 'desc')
     .execute()
+}
+
+export async function updateEvent(
+  id: string,
+  input: EventUpdate,
+): Promise<Event | undefined> {
+  const updated = await getDb()
+    .updateTable('events')
+    .set({
+      ...input,
+      updated_at: new Date().toISOString(),
+    })
+    .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirst()
+
+  return updated
 }
