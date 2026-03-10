@@ -1,61 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import {
-  deriveTeamScore,
-  deriveUserContributions,
-  getBoardTileStateMap,
-  getVisibleTileKeys,
-} from '#/domain/board-state'
-import { canSubmitTeamCompletion, isEventPlayable } from '#/domain/event-state'
-import {
-  canonicalBoardDefinition,
-  canonicalBoardLayoutMetadata,
-} from '#/features/board/canonical-board'
+import { getCurrentEventContext } from '#/features/events/current-event-context'
 import { getCurrentAuth } from '#/server/auth/current-auth'
-import { publicEnv } from '#/lib/env/public'
 
 const phaseItems = [
-  'Canonical board source is checked into the repo and validated on import.',
-  'Visibility is derived from initial tiles plus adjacency from completions.',
-  'Team score is derived from normalized tile records instead of counters.',
-  'Per-user contribution summaries are pure domain output.',
-  'Event-state helpers gate when gameplay actions are allowed.',
-]
-
-const previewCompletions = [
-  { tile_key: '46', completed_by_user_id: 'alice' },
-  { tile_key: '57', completed_by_user_id: 'sam' },
-  { tile_key: '69', completed_by_user_id: 'sam' },
-] as const
-
-const previewTiles = canonicalBoardDefinition.tiles.map((tile) => ({
-  tile_key: tile.tile_key,
-  adjacent_tile_keys: tile.adjacent_tile_keys,
-  points: tile.points,
-}))
-
-const previewStateMap = getBoardTileStateMap(
-  previewTiles,
-  [...previewCompletions],
-  canonicalBoardLayoutMetadata,
-)
-
-const visibleTileCount = getVisibleTileKeys(
-  previewTiles,
-  [...previewCompletions],
-  canonicalBoardLayoutMetadata,
-).length
-
-const previewScore = deriveTeamScore(previewTiles, [...previewCompletions])
-const previewContributions = deriveUserContributions(previewTiles, [
-  ...previewCompletions,
-])
-const playableStatus = isEventPlayable('active')
-const canSubmitInPreview = canSubmitTeamCompletion('active')
-
-const nextSlices = [
-  'Current event resolution and team-scoped board loading',
-  'Honeycomb board rendering and proof submission flow',
-  'Admin inspection, invalidation, and hardening',
+  'Current event lookup is resolved server-side.',
+  'Membership is scoped to the active event before loading board data.',
+  'Board tiles and team completions load as one canonical read model.',
+  'Players without a team get an explicit non-game state.',
+  'Board visibility and score still come from the pure domain layer.',
 ]
 
 const stateToneByTileState = {
@@ -71,12 +23,19 @@ const hexTileClipPath =
   'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)'
 
 export const Route = createFileRoute('/')({
-  loader: async () => getCurrentAuth(),
+  loader: async () => ({
+    auth: await getCurrentAuth(),
+    currentEvent: await getCurrentEventContext(),
+  }),
   component: HomePage,
 })
 
 function HomePage() {
-  const auth = Route.useLoaderData()
+  const { auth, currentEvent } = Route.useLoaderData()
+
+  if (!auth) {
+    return null
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10 sm:px-10 lg:px-12">
@@ -87,26 +46,30 @@ function HomePage() {
           </p>
           <div className="space-y-4">
             <h1 className="max-w-3xl font-['Sora',var(--font-sans)] text-4xl leading-[0.98] font-bold tracking-[-0.04em] sm:text-5xl lg:text-6xl">
-              Phase 5 is live: board visibility and scoring now come from pure
-              domain rules.
+              Phase 6 is live: the app can now resolve the current event and
+              team board context.
             </h1>
             <p className="max-w-2xl text-base leading-7 text-stone-700 sm:text-lg">
-              You are signed in as <strong>{auth?.name}</strong>. Authentication
-              remains active, the canonical board now imports into normalized
-              event records, and gameplay state can be derived without relying
-              on UI or database-specific logic.
+              You are signed in as <strong>{auth.name}</strong>. The player home
+              route now resolves the active event, your team membership, and the
+              board state server-side before rendering.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3 text-sm font-semibold">
             <span className="rounded-full border border-[rgba(87,57,24,0.14)] bg-[rgba(255,251,245,0.82)] px-4 py-2.5 text-stone-600">
-              App: {publicEnv.appName}
+              User: {auth.email}
             </span>
             <span className="rounded-full border border-[rgba(87,57,24,0.14)] bg-[rgba(255,251,245,0.82)] px-4 py-2.5 text-stone-600">
-              User: {auth?.email}
+              Roles: {auth.roles.join(', ')}
             </span>
             <span className="rounded-full border border-[rgba(87,57,24,0.14)] bg-[rgba(255,251,245,0.82)] px-4 py-2.5 text-stone-600">
-              Roles: {auth?.roles.join(', ')}
+              Status:{' '}
+              {currentEvent.kind === 'no-active-event'
+                ? 'Waiting for event'
+                : currentEvent.kind === 'no-team'
+                  ? 'Needs team'
+                  : 'Board loaded'}
             </span>
           </div>
 
@@ -128,7 +91,7 @@ function HomePage() {
 
         <aside className="rounded-3xl border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
           <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-            Phase 5 Status
+            Phase 6 Status
           </p>
           <ul className="mt-4 space-y-3 text-sm text-stone-700">
             {phaseItems.map((item) => (
@@ -141,143 +104,230 @@ function HomePage() {
         </aside>
       </section>
 
-      <section className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-        <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
+      {currentEvent.kind === 'no-active-event' ? (
+        <section className="mt-8 rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
           <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-            Domain Preview
+            No Active Event
           </p>
           <h2 className="mt-3 text-2xl font-semibold text-stone-950">
-            The board state can be derived from canonical tiles plus completions
-            alone.
+            The gameplay board is not live yet.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-700 sm:text-base">
-            This preview uses three sample completions on the imported canonical
-            board. The resulting visible tile count, team score, and per-user
-            contribution split all come from pure functions in{' '}
-            <code className="rounded-lg border border-white/15 bg-[rgba(30,20,10,0.92)] px-1.5 py-0.5 text-stone-100">
-              src/domain
-            </code>
-            .
+            No event currently has status <code>active</code>. Players stay in
+            this holding state until an admin starts the next event.
           </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Visible Tiles
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-stone-950">
-                {visibleTileCount}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Team Score
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-stone-950">
-                {previewScore}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Active Event
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-stone-950">
-                {playableStatus && canSubmitInPreview ? 'Open' : 'Closed'}
-              </p>
-            </div>
-          </div>
-          <div className="mt-6 overflow-hidden rounded-[1.6rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(247,239,226,0.9))] p-4">
-            <div className="space-y-[-8px]">
-              {canonicalBoardLayoutMetadata.rowCounts.map(
-                (rowCount, rowIndex) => {
-                  const rowTiles = canonicalBoardDefinition.tiles.filter(
-                    (tile) => tile.row_index === rowIndex,
-                  )
+        </section>
+      ) : null}
 
-                  return (
-                    <div
-                      key={rowIndex}
-                      className="flex gap-1"
-                      style={{
-                        paddingLeft: `${canonicalBoardLayoutMetadata.rowShifts[rowIndex] * 14}px`,
-                      }}
-                    >
-                      {rowTiles.slice(0, rowCount).map((tile) => (
-                        <div
-                          key={tile.tile_key}
-                          className={`flex h-10 w-[2.3rem] items-center justify-center border text-[0.62rem] font-semibold shadow-[0_1px_0_rgba(255,255,255,0.65)_inset] ${stateToneByTileState[previewStateMap[tile.tile_key]]}`}
-                          style={{
-                            clipPath: hexTileClipPath,
-                            WebkitClipPath: hexTileClipPath,
-                          }}
-                          title={`${tile.tile_key}: ${previewStateMap[tile.tile_key]}`}
-                        >
-                          {tile.tile_key}
-                        </div>
-                      ))}
-                    </div>
-                  )
-                },
-              )}
-            </div>
-          </div>
-        </article>
-
-        <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
-          <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-            Next Stages
-          </p>
-          <div className="mt-4 grid gap-3">
-            {nextSlices.map((item, index) => (
-              <div
-                key={item}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4"
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                    Phase {index + 6}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-stone-900">
-                    {item}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    index === 0
-                      ? 'border-[#627543]/20 bg-[#627543]/8 text-[#4f6035]'
-                      : 'border-stone-300 text-stone-600'
-                  }`}
-                >
-                  {index === 0 ? 'Next' : 'Planned'}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-              Contribution Split
+      {currentEvent.kind === 'no-team' ? (
+        <section className="mt-8 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
+          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
+            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
+              Active Event
             </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {previewContributions.map((contribution) => (
-                <div
-                  key={contribution.userId}
-                  className="rounded-2xl border border-[rgba(87,57,24,0.1)] bg-white/60 px-4 py-3"
-                >
-                  <p className="text-sm font-semibold text-stone-900">
-                    {contribution.userId}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-600">
-                    {contribution.completedTileCount} tiles ·{' '}
-                    {contribution.score} pts
-                  </p>
-                  <p className="mt-2 text-xs tracking-[0.12em] text-stone-500 uppercase">
-                    {contribution.tileKeys.join(', ')}
-                  </p>
-                </div>
-              ))}
+            <h2 className="mt-3 text-2xl font-semibold text-stone-950">
+              {currentEvent.event.name}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-stone-700 sm:text-base">
+              The event is live, but your user is not assigned to a team for it
+              yet. This is an intentional empty state, not a broken board load.
+            </p>
+          </article>
+
+          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
+            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
+              What To Do
+            </p>
+            <div className="mt-4 space-y-3 text-sm text-stone-700">
+              <p>Ask an admin to assign you to a team in the current event.</p>
+              <p>
+                Once assigned, this page will resolve your team board and
+                completions automatically.
+              </p>
+              <p>
+                Board key:{' '}
+                <strong>{currentEvent.event.boardKey ?? 'Unassigned'}</strong>
+              </p>
             </div>
-          </div>
-        </article>
-      </section>
+          </article>
+        </section>
+      ) : null}
+
+      {currentEvent.kind === 'ready' ? (
+        <section className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
+            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
+              Current Board
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-stone-950">
+              {currentEvent.event.name} · {currentEvent.team.name}
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-700 sm:text-base">
+              The active event and your team membership both resolved
+              successfully. This preview is now driven by real board tiles and
+              real team completion rows.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-4">
+              <MetricCard
+                label="Visible Tiles"
+                value={currentEvent.board.visibleTileCount}
+              />
+              <MetricCard
+                label="Completed"
+                value={currentEvent.board.completedTileCount}
+              />
+              <MetricCard label="Team Score" value={currentEvent.board.score} />
+              <MetricCard
+                label="Submissions"
+                value={currentEvent.board.canSubmit ? 'Open' : 'Closed'}
+              />
+            </div>
+            <div className="mt-6 overflow-hidden rounded-[1.6rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(247,239,226,0.9))] p-4">
+              <div className="space-y-[-8px]">
+                {currentEvent.board.layout.rowCounts.map(
+                  (rowCount, rowIndex) => {
+                    const rowTiles = currentEvent.board.tiles.filter(
+                      (tile) => tile.rowIndex === rowIndex,
+                    )
+
+                    return (
+                      <div
+                        key={rowIndex}
+                        className="flex gap-1"
+                        style={{
+                          paddingLeft: `${currentEvent.board.layout.rowShifts[rowIndex] * 14}px`,
+                        }}
+                      >
+                        {rowTiles.slice(0, rowCount).map((tile) => (
+                          <div
+                            key={tile.id}
+                            className={`flex h-10 w-[2.3rem] items-center justify-center border text-[0.62rem] font-semibold shadow-[0_1px_0_rgba(255,255,255,0.65)_inset] ${stateToneByTileState[tile.state]}`}
+                            style={{
+                              clipPath: hexTileClipPath,
+                              WebkitClipPath: hexTileClipPath,
+                            }}
+                            title={`${tile.tileKey}: ${tile.label}`}
+                          >
+                            {tile.tileKey}
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  },
+                )}
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
+            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
+              Loaded Context
+            </p>
+            <div className="mt-4 grid gap-3">
+              <InfoRow
+                label="Board"
+                value={`${currentEvent.board.name} (${currentEvent.board.version})`}
+              />
+              <InfoRow label="Board Key" value={currentEvent.board.key} />
+              <InfoRow
+                label="Can View"
+                value={currentEvent.board.canView ? 'Yes' : 'No'}
+              />
+              <InfoRow
+                label="Total Tiles"
+                value={String(currentEvent.board.totalTileCount)}
+              />
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Contribution Split
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {currentEvent.contributions.length === 0 ? (
+                  <p className="text-sm text-stone-600">
+                    No tiles have been completed yet.
+                  </p>
+                ) : (
+                  currentEvent.contributions.map((contribution) => (
+                    <div
+                      key={contribution.userId}
+                      className="rounded-2xl border border-[rgba(87,57,24,0.1)] bg-white/60 px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-stone-900">
+                        {contribution.userId}
+                      </p>
+                      <p className="mt-1 text-sm text-stone-600">
+                        {contribution.completedTileCount} tiles ·{' '}
+                        {contribution.score} pts
+                      </p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.12em] text-stone-500">
+                        {contribution.tileKeys.join(', ')}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Recent Completions
+              </p>
+              <div className="mt-3 space-y-3">
+                {currentEvent.completions.length === 0 ? (
+                  <p className="text-sm text-stone-600">
+                    No team completions recorded for this event yet.
+                  </p>
+                ) : (
+                  currentEvent.completions.slice(0, 6).map((completion) => (
+                    <div
+                      key={completion.id}
+                      className="rounded-2xl border border-[rgba(87,57,24,0.1)] bg-white/60 px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-stone-900">
+                        {completion.tileKey} · {completion.tileLabel}
+                      </p>
+                      <p className="mt-1 text-sm text-stone-600">
+                        {completion.tilePoints} pts · by{' '}
+                        {completion.completedByName}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </article>
+        </section>
+      ) : null}
     </main>
+  )
+}
+
+function MetricCard({
+  label,
+  value,
+}: {
+  label: string
+  value: number | string
+}) {
+  return (
+    <div className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+        {label}
+      </p>
+      <p className="mt-2 text-3xl font-semibold text-stone-950">{value}</p>
+    </div>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+        {label}
+      </p>
+      <p className="text-sm font-medium text-stone-900">{value}</p>
+    </div>
   )
 }

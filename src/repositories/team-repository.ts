@@ -1,8 +1,16 @@
 import { getDb } from '#/lib/db/client'
-import type { NewTeam, NewTeamMembership, Team, TeamMembership } from '#/models/db'
+import type {
+  NewTeam,
+  NewTeamMembership,
+  Team,
+  TeamMembership,
+} from '#/models/db'
 
 type CreateTeamInput = Pick<NewTeam, 'event_id' | 'name'>
-type AddMembershipInput = Pick<NewTeamMembership, 'event_id' | 'team_id' | 'user_id'>
+type AddMembershipInput = Pick<
+  NewTeamMembership,
+  'event_id' | 'team_id' | 'user_id'
+>
 
 export async function createTeam(input: CreateTeamInput): Promise<Team> {
   const timestamp = new Date().toISOString()
@@ -63,4 +71,25 @@ export async function listTeamMembershipsByEvent(eventId: string) {
     .orderBy('teams.name')
     .orderBy('users.name')
     .execute()
+}
+
+export async function findTeamMembershipByEventAndUser(
+  eventId: string,
+  userId: string,
+) {
+  return getDb()
+    .selectFrom('team_memberships')
+    .innerJoin('teams', 'teams.id', 'team_memberships.team_id')
+    .select([
+      'team_memberships.id',
+      'team_memberships.event_id',
+      'team_memberships.team_id',
+      'team_memberships.user_id',
+      'team_memberships.created_at',
+      'team_memberships.updated_at',
+      'teams.name as team_name',
+    ])
+    .where('team_memberships.event_id', '=', eventId)
+    .where('team_memberships.user_id', '=', userId)
+    .executeTakeFirst()
 }
