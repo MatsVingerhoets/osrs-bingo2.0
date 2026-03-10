@@ -1,5 +1,8 @@
+import type { Kysely, Transaction } from 'kysely'
 import { getDb } from '#/lib/db/client'
-import type { NewBoard, NewBoardTile } from '#/models/db'
+import type { Database, NewBoard, NewBoardTile } from '#/models/db'
+
+export type BoardExecutor = Kysely<Database> | Transaction<Database>
 
 type CreateBoardInput = Pick<
   NewBoard,
@@ -18,42 +21,52 @@ type CreateBoardTileInput = Pick<
   | 'column_index'
 >
 
-export async function createBoardWithTiles(
+export async function createBoardWithTilesInExecutor(
+  executor: BoardExecutor,
   board: CreateBoardInput,
   tiles: CreateBoardTileInput[],
 ) {
   const timestamp = new Date().toISOString()
 
-  return getDb().transaction().execute(async (trx) => {
-    const createdBoard = await trx
-      .insertInto('boards')
-      .values({
-        ...board,
-        created_at: timestamp,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow()
+  const createdBoard = await executor
+    .insertInto('boards')
+    .values({
+      ...board,
+      created_at: timestamp,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow()
 
-    const createdTiles =
-      tiles.length === 0
-        ? []
-        : await trx
-            .insertInto('board_tiles')
-            .values(
-              tiles.map((tile) => ({
-                ...tile,
-                board_id: createdBoard.id,
-                created_at: timestamp,
-              })),
-            )
-            .returningAll()
-            .execute()
+  const createdTiles =
+    tiles.length === 0
+      ? []
+      : await executor
+          .insertInto('board_tiles')
+          .values(
+            tiles.map((tile) => ({
+              ...tile,
+              board_id: createdBoard.id,
+              created_at: timestamp,
+            })),
+          )
+          .returningAll()
+          .execute()
 
-    return {
-      board: createdBoard,
-      tiles: createdTiles,
-    }
-  })
+  return {
+    board: createdBoard,
+    tiles: createdTiles,
+  }
+}
+
+export async function createBoardWithTiles(
+  board: CreateBoardInput,
+  tiles: CreateBoardTileInput[],
+) {
+  return getDb()
+    .transaction()
+    .execute(async (trx) => {
+      return createBoardWithTilesInExecutor(trx, board, tiles)
+    })
 }
 
 export async function findBoardByEventId(eventId: string) {
