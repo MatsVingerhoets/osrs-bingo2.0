@@ -23,12 +23,6 @@ const teamLeaderboard = [
   { name: 'Sol', points: 33 },
 ] as const
 
-const otherTeams = [
-  { name: 'Ember', points: 201 },
-  { name: 'Moss', points: 177 },
-  { name: 'Slate', points: 143 },
-] as const
-
 const PROTOTYPE_TILE_SIZE_PX = 88
 const PROTOTYPE_TILE_HORIZONTAL_GAP_PX = 8
 const PROTOTYPE_TILE_VERTICAL_GAP_PX = 8
@@ -48,12 +42,16 @@ const prototypeTileStateMap = getBoardTileStateMap(
     points: tile.points,
   })),
   [...prototypeCompletions],
-  { initialVisibleTileKeys: canonicalBoardLayoutMetadata.initialVisibleTileKeys },
+  {
+    initialVisibleTileKeys: canonicalBoardLayoutMetadata.initialVisibleTileKeys,
+  },
 )
 
 const prototypeBoardRows = canonicalBoardLayoutMetadata.rowCounts.map(
   (_rowCount, rowIndex) =>
-    canonicalBoardDefinition.tiles.filter((tile) => tile.row_index === rowIndex),
+    canonicalBoardDefinition.tiles.filter(
+      (tile) => tile.row_index === rowIndex,
+    ),
 )
 
 const prototypeCompletedCount = Object.values(prototypeTileStateMap).filter(
@@ -65,23 +63,22 @@ const prototypeUnlockedCount = Object.values(prototypeTileStateMap).filter(
 ).length
 
 const PROTOTYPE_BOARD_HEIGHT_PX =
-  PROTOTYPE_ROW_HEIGHT_PX * (canonicalBoardLayoutMetadata.rowCounts.length - 1) +
+  PROTOTYPE_ROW_HEIGHT_PX *
+    (canonicalBoardLayoutMetadata.rowCounts.length - 1) +
   PROTOTYPE_TILE_SIZE_PX
 
-const PROTOTYPE_BOARD_WIDTH_PX =
-  Math.max(
-    ...canonicalBoardLayoutMetadata.rowCounts.map((rowCount, rowIndex) => {
-      const rowWidth =
-        PROTOTYPE_TILE_SIZE_PX +
-        (rowCount - 1) * PROTOTYPE_ROW_STEP_PX
+const PROTOTYPE_BOARD_WIDTH_PX = Math.max(
+  ...canonicalBoardLayoutMetadata.rowCounts.map((rowCount, rowIndex) => {
+    const rowWidth =
+      PROTOTYPE_TILE_SIZE_PX + (rowCount - 1) * PROTOTYPE_ROW_STEP_PX
 
-      return (
-        canonicalBoardLayoutMetadata.rowShifts[rowIndex] *
+    return (
+      canonicalBoardLayoutMetadata.rowShifts[rowIndex] *
         PROTOTYPE_COLUMN_OFFSET_PX +
-        rowWidth
-      )
-    }),
-  )
+      rowWidth
+    )
+  }),
+)
 
 type DesktopMetrics = {
   boardScale: number
@@ -173,7 +170,9 @@ function getTileContentClass(state: (typeof prototypeTileStateMap)[string]) {
   return ''
 }
 
-function getTileInteractionClass(state: (typeof prototypeTileStateMap)[string]) {
+function getTileInteractionClass(
+  state: (typeof prototypeTileStateMap)[string],
+) {
   if (state === 'hidden') {
     return 'cursor-default'
   }
@@ -244,7 +243,9 @@ function useDesktopMetrics() {
 
   useEffect(() => {
     function updateMetrics() {
-      setDesktopMetrics(getDesktopMetrics(window.innerWidth, window.innerHeight))
+      setDesktopMetrics(
+        getDesktopMetrics(window.innerWidth, window.innerHeight),
+      )
     }
 
     updateMetrics()
@@ -366,9 +367,21 @@ export function PlayerHomePrototype() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_20%),radial-gradient(circle_at_right,rgba(59,130,246,0.08),transparent_26%),linear-gradient(180deg,#020617,#0f172a_42%,#020617)] px-4 py-2.5 text-white sm:px-5 sm:py-3 lg:px-6 lg:py-4">
       <div
         className="mx-auto"
-        style={{ maxWidth: `${Math.round(desktopMetrics.dashboardMaxWidth)}px` }}
+        style={{
+          maxWidth: `${Math.round(desktopMetrics.dashboardMaxWidth)}px`,
+        }}
       >
-        <TopNav />
+        <TopNav
+          appName="OSRS Bingo 2.0"
+          eventName="Spring Event 2026"
+          playerName="Mira"
+          teamName="Team Ash"
+          actions={[
+            { kind: 'text', label: 'Rules', value: 'Soon' },
+            { kind: 'link', label: 'Mockups', to: '/mockups' },
+            { kind: 'href', label: 'Logout', href: '/auth/logout?returnTo=/' },
+          ]}
+        />
 
         <div
           className="grid items-start"
@@ -378,14 +391,70 @@ export function PlayerHomePrototype() {
           }}
         >
           <BoardShell
-            completedCount={prototypeCompletedCount}
-            unlockedCount={prototypeUnlockedCount}
+            eyebrow="Team Board"
+            title="Team Ash live board"
+            description="Prototype shell for the player homepage. The board remains primary, with compact competitive context in the right rail."
+            metrics={[
+              {
+                label: 'Visible',
+                value: prototypeCompletedCount + prototypeUnlockedCount,
+              },
+              { label: 'Completed', value: prototypeCompletedCount },
+              { label: 'Score', value: 184 },
+            ]}
           >
             <PrototypeBoard scale={desktopMetrics.boardScale} />
           </BoardShell>
           <RightRail
-            teamLeaderboard={teamLeaderboard}
-            otherTeams={otherTeams}
+            stats={[
+              {
+                eyebrow: 'Team',
+                label: 'Ash',
+                detail: `${prototypeCompletedCount} completed · ${prototypeUnlockedCount} unlocked`,
+                value: '184',
+              },
+              {
+                eyebrow: 'Board',
+                label: 'Submissions open',
+                detail: 'Prototype shell with live-like metrics',
+                value: 'Live',
+                valueTone: 'accent',
+              },
+            ]}
+            contributionTitle="Team Ash contribution split"
+            contributions={teamLeaderboard.map((entry, index) => ({
+              key: `${entry.name}-${index}`,
+              name: entry.name,
+              score: entry.points,
+              completedTileCount: index === 0 ? 2 : 1,
+              tileKeys: index === 0 ? ['46', '57'] : ['58'],
+            }))}
+            recentCompletions={[
+              {
+                id: '46',
+                tileKey: '46',
+                tileLabel: 'Prototype tile',
+                tilePoints: 24,
+                completedByName: 'Lynx',
+                completedAtLabel: 'Mar 11, 2026, 3:04 PM',
+              },
+              {
+                id: '57',
+                tileKey: '57',
+                tileLabel: 'Prototype tile',
+                tilePoints: 20,
+                completedByName: 'Mira',
+                completedAtLabel: 'Mar 11, 2026, 2:41 PM',
+              },
+              {
+                id: '58',
+                tileKey: '58',
+                tileLabel: 'Prototype tile',
+                tilePoints: 20,
+                completedByName: 'Dax',
+                completedAtLabel: 'Mar 11, 2026, 2:18 PM',
+              },
+            ]}
           />
         </div>
       </div>

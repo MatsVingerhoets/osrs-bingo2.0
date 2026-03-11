@@ -1,10 +1,21 @@
 import { useState, useTransition } from 'react'
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { PlayerBoard } from '#/features/board/player-board'
 import { TilePanel } from '#/features/board/tile-panel'
+import {
+  BoardShell,
+  RightRail,
+  StatusPanel,
+  TopNav,
+} from '#/features/design/player-home-prototype-sections'
 import { submitTeamCompletion } from '#/features/completions/submit-team-completion'
 import { getCurrentEventContext } from '#/features/events/current-event-context'
 import { getCurrentAuth } from '#/server/auth/current-auth'
+
+const completionTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
 
 export const Route = createFileRoute('/')({
   loader: async () => ({
@@ -13,6 +24,16 @@ export const Route = createFileRoute('/')({
   }),
   component: HomePage,
 })
+
+function formatCompletionTime(value: string) {
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return completionTimeFormatter.format(parsed)
+}
 
 function HomePage() {
   const router = useRouter()
@@ -28,15 +49,15 @@ function HomePage() {
   const selectedTile =
     currentEvent.kind === 'ready'
       ? (currentEvent.board.tiles.find(
-          (tile) => tile.tileKey === selectedTileKey,
-        ) ?? null)
+        (tile) => tile.tileKey === selectedTileKey,
+      ) ?? null)
       : null
 
   const selectedCompletion =
     currentEvent.kind === 'ready' && selectedTile
       ? currentEvent.completions.find(
-          (completion) => completion.tileKey === selectedTile.tileKey,
-        )
+        (completion) => completion.tileKey === selectedTile.tileKey,
+      )
       : undefined
 
   async function handleSubmitCompletion(proofUrl: string) {
@@ -66,219 +87,100 @@ function HomePage() {
     }
   }
 
+  const navActions = [
+    {
+      kind: 'text' as const,
+      label: 'Rules',
+      value: 'Soon',
+    },
+    ...(auth.roles.includes('ADMIN')
+      ? [
+        {
+          kind: 'link' as const,
+          label: 'Admin',
+          to: '/admin',
+        },
+      ]
+      : []),
+    {
+      kind: 'href' as const,
+      label: 'Logout',
+      href: '/auth/logout?returnTo=/',
+    },
+  ]
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-10 sm:px-10 lg:px-12">
-      <section className="grid gap-10 overflow-hidden rounded-4xl border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.92),rgba(255,250,240,0.74))] px-6 py-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:px-10 sm:py-10 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="space-y-6">
-          <p className="inline-flex rounded-full border border-[rgba(151,81,15,0.18)] bg-[rgba(255,248,238,0.72)] px-3.5 py-1.5 text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[#97510f]">
-            OSRS Bingo 2.0
-          </p>
-          <div className="space-y-4">
-            <h1 className="max-w-3xl font-['Sora',var(--font-sans)] text-4xl leading-[0.98] font-bold tracking-[-0.04em] sm:text-5xl lg:text-6xl">
-              Phase 7 is live: players can view and interact with the current
-              honeycomb board.
-            </h1>
-            <p className="max-w-2xl text-base leading-7 text-stone-700 sm:text-lg">
-              You are signed in as <strong>{auth.name}</strong>. The player
-              board now shows hidden, unlocked, and completed tiles and supports
-              proof URL submission for unlocked goals.
-            </p>
-          </div>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_20%),radial-gradient(circle_at_right,rgba(59,130,246,0.08),transparent_26%),linear-gradient(180deg,#020617,#0f172a_42%,#020617)] px-4 py-2.5 text-white sm:px-5 sm:py-3 lg:px-6 lg:py-4">
+      <div className="mx-auto">
+        <TopNav
+          appName="OSRS Bingo 2.0"
+          eventName={
+            currentEvent.kind === 'no-active-event'
+              ? null
+              : currentEvent.event.name
+          }
+          playerName={auth.name}
+          teamName={
+            currentEvent.kind === 'ready' ? currentEvent.team.name : null
+          }
+          actions={navActions}
+        />
 
-          <div className="flex flex-wrap gap-3 text-sm font-semibold">
-            <span className="rounded-full border border-[rgba(87,57,24,0.14)] bg-[rgba(255,251,245,0.82)] px-4 py-2.5 text-stone-600">
-              User: {auth.email}
-            </span>
-            <span className="rounded-full border border-[rgba(87,57,24,0.14)] bg-[rgba(255,251,245,0.82)] px-4 py-2.5 text-stone-600">
-              Roles: {auth.roles.join(', ')}
-            </span>
-            <span className="rounded-full border border-[rgba(87,57,24,0.14)] bg-[rgba(255,251,245,0.82)] px-4 py-2.5 text-stone-600">
-              Status:{' '}
-              {currentEvent.kind === 'no-active-event'
-                ? 'Waiting for event'
-                : currentEvent.kind === 'no-team'
-                  ? 'Needs team'
-                  : currentEvent.board.canSubmit
-                    ? 'Playing'
-                    : 'Read only'}
-            </span>
-          </div>
+        {currentEvent.kind === 'no-active-event' ? (
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_22rem]">
+            <StatusPanel
+              eyebrow="No Active Event"
+              title="The board is waiting for the next event."
+              description="No event currently has status active. Players stay in this holding state until an admin starts the next event."
+            />
+            <StatusPanel
+              eyebrow="Player Status"
+              title="Signed in and ready"
+              description={`${auth.name} is authenticated. Once an event is activated and a team board is assigned, this page will resolve the live player board automatically.`}
+            />
+          </section>
+        ) : null}
 
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/admin"
-              className="rounded-full border border-[rgba(87,57,24,0.18)] bg-[rgba(255,248,238,0.92)] px-5 py-2.5 text-sm font-semibold text-stone-800 no-underline"
+        {currentEvent.kind === 'no-team' ? (
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_24rem]">
+            <StatusPanel
+              eyebrow="Active Event"
+              title={currentEvent.event.name}
+              description="The event is live, but your user is not assigned to a team for it yet. This is an intentional empty state, not a broken board load."
+            />
+            <StatusPanel
+              eyebrow="Assignment Needed"
+              title="Waiting for team placement"
+              description="Ask an admin to assign you to a team in the current event. Once assigned, the board, completions, and team context will load here automatically."
             >
-              Admin
-            </Link>
-            <a
-              href="/auth/logout?returnTo=/"
-              className="rounded-full border border-[rgba(87,57,24,0.18)] bg-[rgba(151,81,15,0.08)] px-5 py-2.5 text-sm font-semibold text-[#97510f] no-underline"
-            >
-              Log Out
-            </a>
-          </div>
-        </div>
-
-        <aside className="rounded-3xl border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
-          <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-            Phase 7 Status
-          </p>
-          <ul className="mt-4 space-y-3 text-sm text-stone-700">
-            {[
-              'The player board renders the honeycomb layout from runtime board rows.',
-              'Hidden, unlocked, and completed tiles have distinct interaction states.',
-              'Unlocked tiles open a proof submission panel.',
-              'Successful submissions refresh the current event board state.',
-              'Completed tiles show proof and attribution details.',
-            ].map((item) => (
-              <li key={item} className="flex gap-3">
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-      </section>
-
-      <section className="mt-8 rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.88),rgba(255,250,240,0.7))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.08)] backdrop-blur-[10px] sm:p-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-              Phase Roadmap
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-stone-950">
-              Progress across the implementation plan
-            </h2>
-          </div>
-          <p className="text-sm text-stone-600">
-            Keeps the shipped phases and next steps visible from the player
-            home.
-          </p>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {[
-            { phase: 4, label: 'Canonical board import', status: 'done' },
-            { phase: 5, label: 'Pure domain rules', status: 'done' },
-            { phase: 6, label: 'Current event resolution', status: 'done' },
-            { phase: 7, label: 'Player board experience', status: 'current' },
-            { phase: 8, label: 'Admin event setup flow', status: 'next' },
-            { phase: 9, label: 'Team management and assignment', status: 'next' },
-          ].map((item) => (
-            <div
-              key={item.phase}
-              className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4"
-            >
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                  Phase {item.phase}
-                </p>
-                <p className="mt-1 text-sm font-medium text-stone-900">
-                  {item.label}
-                </p>
+              <div className="rounded-[1rem] border border-slate-400/15 bg-slate-950/70 px-4 py-4 text-sm text-slate-300">
+                Board key: {currentEvent.event.boardKey ?? 'Unassigned'}
               </div>
-              <span
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  item.status === 'done'
-                    ? 'border-[#627543]/20 bg-[#627543]/8 text-[#4f6035]'
-                    : item.status === 'current'
-                      ? 'border-[#97510f]/20 bg-[#97510f]/8 text-[#97510f]'
-                      : 'border-stone-300 text-stone-600'
-                }`}
-              >
-                {item.status === 'done'
-                  ? 'Done'
-                  : item.status === 'current'
-                    ? 'Current'
-                    : 'Next'}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+            </StatusPanel>
+          </section>
+        ) : null}
 
-      {currentEvent.kind === 'no-active-event' ? (
-        <section className="mt-8 rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
-          <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-            No Active Event
-          </p>
-          <h2 className="mt-3 text-2xl font-semibold text-stone-950">
-            The gameplay board is not live yet.
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-700 sm:text-base">
-            No event currently has status <code>active</code>. Players stay in
-            this holding state until an admin starts the next event.
-          </p>
-        </section>
-      ) : null}
-
-      {currentEvent.kind === 'no-team' ? (
-        <section className="mt-8 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
-          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
-            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-              Active Event
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold text-stone-950">
-              {currentEvent.event.name}
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-stone-700 sm:text-base">
-              The event is live, but your user is not assigned to a team for it
-              yet. This is an intentional empty state, not a broken board load.
-            </p>
-          </article>
-
-          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-8 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px]">
-            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-              What To Do
-            </p>
-            <div className="mt-4 space-y-3 text-sm text-stone-700">
-              <p>Ask an admin to assign you to a team in the current event.</p>
-              <p>
-                Once assigned, this page will resolve your team board and
-                completions automatically.
-              </p>
-              <p>
-                Board key:{' '}
-                <strong>{currentEvent.event.boardKey ?? 'Unassigned'}</strong>
-              </p>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {currentEvent.kind === 'ready' ? (
-        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
-          <div className="min-w-0 space-y-5">
-            <section className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.88),rgba(255,250,240,0.68))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_18px_50px_rgba(87,57,24,0.08)] backdrop-blur-[10px] sm:p-7">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-                    Current Event
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold text-stone-950">
-                    {currentEvent.event.name}
-                  </h2>
-                  <p className="mt-2 text-sm text-stone-600 sm:text-base">
-                    Team {currentEvent.team.name} is live on the honeycomb board.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 sm:min-w-[22rem]">
-                  <MetricCard
-                    label="Visible"
-                    value={currentEvent.board.visibleTileCount}
-                  />
-                  <MetricCard
-                    label="Completed"
-                    value={currentEvent.board.completedTileCount}
-                  />
-                  <MetricCard label="Score" value={currentEvent.board.score} />
-                </div>
-              </div>
-            </section>
-
-            <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.82),rgba(255,250,240,0.62))] p-4 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.08)] backdrop-blur-[10px] sm:p-5">
+        {currentEvent.kind === 'ready' ? (
+          <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+            <BoardShell
+              eyebrow="Team Board"
+              title={`${currentEvent.team.name} live board`}
+              description={`${currentEvent.event.name} is active. Select an unlocked tile to submit proof, or open a completed tile to inspect proof and attribution details.`}
+              metrics={[
+                {
+                  label: 'Visible',
+                  value: currentEvent.board.visibleTileCount,
+                },
+                {
+                  label: 'Completed',
+                  value: currentEvent.board.completedTileCount,
+                },
+                {
+                  label: 'Score',
+                  value: currentEvent.board.score,
+                },
+              ]}
+            >
               <PlayerBoard
                 layout={currentEvent.board.layout}
                 tiles={currentEvent.board.tiles}
@@ -287,143 +189,71 @@ function HomePage() {
                   setSelectedTileKey(tile.tileKey)
                 }}
               />
-            </article>
-          </div>
+            </BoardShell>
 
-          <article className="rounded-[1.75rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,238,0.9),rgba(255,250,240,0.72))] p-6 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_20px_60px_rgba(87,57,24,0.1)] backdrop-blur-[10px] sm:p-8">
-            <p className="text-[0.78rem] font-bold uppercase tracking-[0.22em] text-[#627543]">
-              Team Snapshot
-            </p>
-            <div className="mt-4 grid gap-3">
-              <InfoRow
-                label="Board"
-                value={`${currentEvent.board.name} (${currentEvent.board.version})`}
-              />
-              <InfoRow label="Board Key" value={currentEvent.board.key} />
-              <InfoRow
-                label="Submissions"
-                value={currentEvent.board.canSubmit ? 'Open' : 'Closed'}
-              />
-              <InfoRow
-                label="Total Tiles"
-                value={String(currentEvent.board.totalTileCount)}
-              />
-            </div>
+            <RightRail
+              stats={[
+                {
+                  eyebrow: 'Team',
+                  label: currentEvent.team.name,
+                  detail: `${currentEvent.board.completedTileCount} completed · ${currentEvent.board.visibleTileCount -
+                    currentEvent.board.completedTileCount
+                    } unlocked or visible`,
+                  value: String(currentEvent.board.score),
+                },
+                {
+                  eyebrow: 'Board',
+                  label: currentEvent.board.canSubmit
+                    ? 'Submissions open'
+                    : 'Read only',
+                  detail: `${currentEvent.board.totalTileCount} total tiles · ${currentEvent.board.name} ${currentEvent.board.version}`,
+                  value: currentEvent.board.canSubmit ? 'Live' : 'Locked',
+                  valueTone: 'accent',
+                },
+              ]}
+              contributionTitle={`${currentEvent.team.name} contribution split`}
+              contributions={currentEvent.contributions.map((contribution) => ({
+                key: contribution.userId,
+                name: contribution.userId,
+                score: contribution.score,
+                completedTileCount: contribution.completedTileCount,
+                tileKeys: contribution.tileKeys,
+              }))}
+              recentCompletions={currentEvent.completions
+                .slice(0, 6)
+                .map((completion) => ({
+                  id: completion.id,
+                  tileKey: completion.tileKey,
+                  tileLabel: completion.tileLabel,
+                  tilePoints: completion.tilePoints,
+                  completedByName: completion.completedByName,
+                  completedAtLabel: formatCompletionTime(
+                    completion.completedAt,
+                  ),
+                }))}
+              onSelectCompletion={(tileKey) => {
+                setSubmissionError(null)
+                setSelectedTileKey(tileKey)
+              }}
+            />
+          </section>
+        ) : null}
 
-            <p className="mt-5 text-sm leading-6 text-stone-600">
-              Select an unlocked tile to submit proof, or open a completed tile
-              to inspect proof and attribution details.
-            </p>
-
-            <section className="mt-6 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Contribution Split
-              </p>
-              <div className="mt-3 grid gap-3">
-                {currentEvent.contributions.length === 0 ? (
-                  <p className="text-sm text-stone-600">
-                    No tiles have been completed yet.
-                  </p>
-                ) : (
-                  currentEvent.contributions.map((contribution) => (
-                    <div
-                      key={contribution.userId}
-                      className="rounded-2xl border border-[rgba(87,57,24,0.1)] bg-white/60 px-4 py-3"
-                    >
-                      <p className="text-sm font-semibold text-stone-900">
-                        {contribution.userId}
-                      </p>
-                      <p className="mt-1 text-sm text-stone-600">
-                        {contribution.completedTileCount} tiles ·{' '}
-                        {contribution.score} pts
-                      </p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.12em] text-stone-500">
-                        {contribution.tileKeys.join(', ')}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className="mt-6 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Recent Completions
-              </p>
-              <div className="mt-3 space-y-3">
-                {currentEvent.completions.length === 0 ? (
-                  <p className="text-sm text-stone-600">
-                    No team completions recorded for this event yet.
-                  </p>
-                ) : (
-                  currentEvent.completions.slice(0, 6).map((completion) => (
-                    <button
-                      key={completion.id}
-                      type="button"
-                      onClick={() => {
-                        setSubmissionError(null)
-                        setSelectedTileKey(completion.tileKey)
-                      }}
-                      className="block w-full rounded-2xl border border-[rgba(87,57,24,0.1)] bg-white/60 px-4 py-3 text-left"
-                    >
-                      <p className="text-sm font-semibold text-stone-900">
-                        {completion.tileKey} · {completion.tileLabel}
-                      </p>
-                      <p className="mt-1 text-sm text-stone-600">
-                        {completion.tilePoints} pts · by{' '}
-                        {completion.completedByName}
-                      </p>
-                    </button>
-                  ))
-                )}
-              </div>
-            </section>
-          </article>
-        </section>
-      ) : null}
-
-      {selectedTile && currentEvent.kind === 'ready' ? (
-        <TilePanel
-          tile={selectedTile}
-          completion={selectedCompletion}
-          canSubmit={currentEvent.board.canSubmit}
-          isSubmitting={isPending}
-          errorMessage={submissionError}
-          onClose={() => {
-            setSubmissionError(null)
-            setSelectedTileKey(null)
-          }}
-          onSubmit={handleSubmitCompletion}
-        />
-      ) : null}
+        {selectedTile && currentEvent.kind === 'ready' ? (
+          <TilePanel
+            tile={selectedTile}
+            completion={selectedCompletion}
+            canSubmit={currentEvent.board.canSubmit}
+            isSubmitting={isPending}
+            errorMessage={submissionError}
+            onClose={() => {
+              setSubmissionError(null)
+              setSelectedTileKey(null)
+            }}
+            onSubmit={handleSubmitCompletion}
+          />
+        ) : null}
+      </div>
     </main>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-}: {
-  label: string
-  value: number | string
-}) {
-  return (
-    <div className="rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-semibold text-stone-950">{value}</p>
-    </div>
-  )
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(87,57,24,0.12)] bg-[rgba(255,252,248,0.74)] px-4 py-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-        {label}
-      </p>
-      <p className="text-sm font-medium text-stone-900">{value}</p>
-    </div>
   )
 }
