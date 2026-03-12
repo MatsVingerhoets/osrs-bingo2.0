@@ -9,14 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RulesRouteImport } from './routes/rules'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MockupsIndexRouteImport } from './routes/mockups/index'
-import { Route as MockupsBRouteImport } from './routes/mockups/b'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -25,16 +29,6 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MockupsIndexRoute = MockupsIndexRouteImport.update({
-  id: '/mockups/',
-  path: '/mockups/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MockupsBRoute = MockupsBRouteImport.update({
-  id: '/mockups/b',
-  path: '/mockups/b',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLogoutRoute = AuthLogoutRouteImport.update({
@@ -56,73 +50,73 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/rules': typeof RulesRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
-  '/mockups/b': typeof MockupsBRoute
-  '/mockups/': typeof MockupsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/rules': typeof RulesRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
-  '/mockups/b': typeof MockupsBRoute
-  '/mockups': typeof MockupsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/rules': typeof RulesRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
-  '/mockups/b': typeof MockupsBRoute
-  '/mockups/': typeof MockupsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/rules'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
-    | '/mockups/b'
-    | '/mockups/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
+    | '/rules'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
-    | '/mockups/b'
-    | '/mockups'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/rules'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
-    | '/mockups/b'
-    | '/mockups/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  RulesRoute: typeof RulesRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
-  MockupsBRoute: typeof MockupsBRoute
-  MockupsIndexRoute: typeof MockupsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -135,20 +129,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mockups/': {
-      id: '/mockups/'
-      path: '/mockups'
-      fullPath: '/mockups/'
-      preLoaderRoute: typeof MockupsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mockups/b': {
-      id: '/mockups/b'
-      path: '/mockups/b'
-      fullPath: '/mockups/b'
-      preLoaderRoute: typeof MockupsBRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/logout': {
@@ -178,11 +158,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  RulesRoute: RulesRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
-  MockupsBRoute: MockupsBRoute,
-  MockupsIndexRoute: MockupsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

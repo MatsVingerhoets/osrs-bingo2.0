@@ -4,6 +4,7 @@ import {
   deriveUserContributions,
   getBoardTileStateMap,
 } from '#/domain/board-state'
+import { deriveEventStandings } from '#/domain/standings'
 import { canSubmitTeamCompletion, canViewBoard } from '#/domain/event-state'
 import { getAppSession } from '#/lib/session/app-session'
 import type { JsonValue } from '#/models/db'
@@ -11,9 +12,16 @@ import {
   findBoardByEventId,
   listBoardTiles,
 } from '#/repositories/board-repository'
-import { listTeamTileCompletions } from '#/repositories/completion-repository'
+import {
+  listEventTileCompletions,
+  listTeamTileCompletions,
+} from '#/repositories/completion-repository'
 import { findEventByStatus } from '#/repositories/event-repository'
-import { findTeamMembershipByEventAndUser } from '#/repositories/team-repository'
+import {
+  findTeamMembershipByEventAndUser,
+  listTeamMembershipsByEventAndTeam,
+  listTeamsByEvent,
+} from '#/repositories/team-repository'
 
 type BoardLayoutMetadata = {
   initialVisibleTileKeys: string[]
@@ -57,6 +65,23 @@ type CurrentCompletion = {
   proofUrl: string
 }
 
+type CurrentTeamContribution = {
+  userId: string
+  userName: string
+  score: number
+  completedTileCount: number
+  tileKeys: string[]
+}
+
+type CurrentStanding = {
+  teamId: string
+  teamName: string
+  rank: number
+  score: number
+  gapToAbove: number | null
+  gapToBelow: number | null
+}
+
 function toIsoString(value: string | Date | null) {
   if (!value) {
     return null
@@ -65,7 +90,7 @@ function toIsoString(value: string | Date | null) {
   return value instanceof Date ? value.toISOString() : value
 }
 
-type CurrentEventContext =
+export type CurrentEventContext =
   | {
       kind: 'no-active-event'
     }
@@ -92,13 +117,51 @@ type CurrentEventContext =
         tiles: CurrentBoardTile[]
       }
       completions: CurrentCompletion[]
-      contributions: {
-        userId: string
-        score: number
-        completedTileCount: number
-        tileKeys: string[]
-      }[]
+      contributions: CurrentTeamContribution[]
+      standings: {
+        currentTeamRank: number
+        totalTeams: number
+        gapToAbove: number | null
+        gapToBelow: number | null
+        otherTeams: CurrentStanding[]
+      }
     }
+
+function mergeTeamContributions({
+  roster,
+  contributions,
+}: {
+  roster: Awaited<ReturnType<typeof listTeamMembershipsByEventAndTeam>>
+  contributions: ReturnType<typeof deriveUserContributions>
+}): CurrentTeamContribution[] {
+  const contributionByUserId = new Map(
+    contributions.map((contribution) => [contribution.userId, contribution]),
+  )
+
+  return roster
+    .map((member) => {
+      const contribution = contributionByUserId.get(member.user_id)
+
+      return {
+        userId: member.user_id,
+        userName: member.user_name,
+        score: contribution?.score ?? 0,
+        completedTileCount: contribution?.completedTileCount ?? 0,
+        tileKeys: contribution?.tileKeys ?? [],
+      }
+    })
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score
+      }
+
+      if (right.completedTileCount !== left.completedTileCount) {
+        return right.completedTileCount - left.completedTileCount
+      }
+
+      return left.userName.localeCompare(right.userName)
+    })
+}
 
 function assertBoardLayoutMetadata(layoutJson: JsonValue): BoardLayoutMetadata {
   if (
@@ -190,6 +253,12 @@ export const getCurrentEventContext = createServerFn({ method: 'GET' }).handler(
 
     const layout = assertBoardLayoutMetadata(board.layout_json)
     const boardTiles = await listBoardTiles(board.id)
+    const teams = await listTeamsByEvent(event.id)
+    const roster = await listTeamMembershipsByEventAndTeam(
+      event.id,
+      membership.team_id,
+    )
+    const eventCompletions = await listEventTileCompletions(event.id)
     const completions = await listTeamTileCompletions(
       event.id,
       membership.team_id,
@@ -207,17 +276,20 @@ export const getCurrentEventContext = createServerFn({ method: 'GET' }).handler(
       layout,
     )
 
-    const contributions = deriveUserContributions(
-      boardTiles.map((tile) => ({
-        tile_key: tile.tile_key,
-        adjacent_tile_keys: tile.adjacent_tile_keys,
-        points: tile.points,
-      })),
-      completions.map((completion) => ({
-        tile_key: completion.tile_key,
-        completed_by_user_id: completion.completed_by_user_id,
-      })),
-    )
+    const contributions = mergeTeamContributions({
+      roster,
+      contributions: deriveUserContributions(
+        boardTiles.map((tile) => ({
+          tile_key: tile.tile_key,
+          adjacent_tile_keys: tile.adjacent_tile_keys,
+          points: tile.points,
+        })),
+        completions.map((completion) => ({
+          tile_key: completion.tile_key,
+          completed_by_user_id: completion.completed_by_user_id,
+        })),
+      ),
+    })
 
     const score = deriveTeamScore(
       boardTiles.map((tile) => ({
@@ -238,6 +310,31 @@ export const getCurrentEventContext = createServerFn({ method: 'GET' }).handler(
     const completedTileCount = Object.values(tileStateMap).filter(
       (state) => state === 'completed',
     ).length
+    const standings = deriveEventStandings(
+      boardTiles.map((tile) => ({
+        tile_key: tile.tile_key,
+        adjacent_tile_keys: tile.adjacent_tile_keys,
+        points: tile.points,
+      })),
+      teams.map((team) => ({
+        teamId: team.id,
+        teamName: team.name,
+      })),
+      eventCompletions.map((completion) => ({
+        teamId: completion.team_id,
+        tile_key: completion.tile_key,
+        completed_by_user_id: completion.completed_by_user_id,
+      })),
+    )
+    const currentStanding = standings.find(
+      (standing) => standing.teamId === membership.team_id,
+    )
+
+    if (!currentStanding) {
+      throw new Error(
+        `Active event ${event.id} is missing standing data for team ${membership.team_id}`,
+      )
+    }
 
     return {
       kind: 'ready',
@@ -280,6 +377,15 @@ export const getCurrentEventContext = createServerFn({ method: 'GET' }).handler(
         proofUrl: completion.proof_url,
       })),
       contributions,
+      standings: {
+        currentTeamRank: currentStanding.rank,
+        totalTeams: standings.length,
+        gapToAbove: currentStanding.gapToAbove,
+        gapToBelow: currentStanding.gapToBelow,
+        otherTeams: standings.filter(
+          (standing) => standing.teamId !== membership.team_id,
+        ),
+      },
     }
   },
 )

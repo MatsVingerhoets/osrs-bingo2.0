@@ -21,112 +21,199 @@ type PlayerBoardProps = {
 }
 
 const TILE_SIZE_PX = 88
-const TILE_HORIZONTAL_OVERLAP_PX = 8
-const TILE_VERTICAL_GAP_PX = 4
+const TILE_HORIZONTAL_GAP_PX = 8
+const TILE_VERTICAL_GAP_PX = 8
 const ROW_HEIGHT_PX = TILE_SIZE_PX * 0.75 + TILE_VERTICAL_GAP_PX
-const COLUMN_OFFSET_PX = (TILE_SIZE_PX - TILE_HORIZONTAL_OVERLAP_PX) / 2
+const COLUMN_OFFSET_PX = TILE_SIZE_PX / 2 + TILE_HORIZONTAL_GAP_PX / 2
+const ROW_STEP_PX = TILE_SIZE_PX + TILE_HORIZONTAL_GAP_PX
+const HEX_TILE_CLIP_PATH =
+  'polygon(0% 25%, 50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%)'
 
-const tierToneByColor = {
-  white:
-    'border-[rgba(120,105,90,0.18)] bg-[linear-gradient(180deg,#ffffff,#f1ede6)] text-stone-800',
-  green:
-    'border-[rgba(82,111,54,0.2)] bg-[linear-gradient(180deg,#86efac,#4ade80)] text-[#18381f]',
-  blue: 'border-[rgba(56,117,168,0.2)] bg-[linear-gradient(180deg,#93c5fd,#7dd3fc)] text-[#12324f]',
-  red: 'border-[rgba(176,62,62,0.2)] bg-[linear-gradient(180deg,#fca5a5,#ef4444)] text-[#4d1313]',
-  purple:
-    'border-[rgba(117,74,170,0.2)] bg-[linear-gradient(180deg,#d8b4fe,#a855f7)] text-[#351355]',
-  yellow:
-    'border-[rgba(170,130,23,0.2)] bg-[linear-gradient(180deg,#fde68a,#eab308)] text-[#4b3507]',
-} as const
+function getTileImageUrl(tileKey: string) {
+  return `/images/tiles/${tileKey.padStart(3, '0')}.webp`
+}
 
-const hexTileClipPath =
-  'polygon(6.7% 25%, 50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%)'
+function getTileFrameClass(colorTier: string, state: PlayerBoardTile['state']) {
+  if (state === 'unlocked') {
+    return 'bg-slate-200/20'
+  }
+
+  switch (colorTier) {
+    case 'green':
+      return 'bg-teal-300/60'
+    case 'blue':
+      return 'bg-sky-300/60'
+    case 'red':
+      return 'bg-rose-300/60'
+    case 'purple':
+      return 'bg-violet-300/60'
+    case 'yellow':
+      return 'bg-amber-300/70'
+    case 'white':
+    default:
+      return 'bg-slate-200/60'
+  }
+}
+
+function getTileFillClass(colorTier: string, state: PlayerBoardTile['state']) {
+  if (state === 'unlocked') {
+    return 'bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900'
+  }
+
+  switch (colorTier) {
+    case 'green':
+      return 'bg-gradient-to-b from-teal-700 to-teal-900'
+    case 'blue':
+      return 'bg-gradient-to-b from-sky-700 to-sky-900'
+    case 'red':
+      return 'bg-gradient-to-b from-rose-700 to-rose-900'
+    case 'purple':
+      return 'bg-gradient-to-b from-violet-700 to-violet-900'
+    case 'yellow':
+      return 'bg-gradient-to-b from-amber-600 to-amber-800'
+    case 'white':
+    default:
+      return 'bg-gradient-to-b from-slate-300 to-slate-500'
+  }
+}
+
+function CompletionMark() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="absolute inset-0 z-20 m-auto h-14 w-14 text-emerald-800"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="8.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M16.9 8.8L10.7 15l-3.6-3.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function getBoardWidth(layout: PlayerBoardLayout) {
+  return Math.max(
+    ...layout.rowCounts.map((rowCount, rowIndex) => {
+      const rowWidth = TILE_SIZE_PX + (rowCount - 1) * ROW_STEP_PX
+
+      return layout.rowShifts[rowIndex] * COLUMN_OFFSET_PX + rowWidth
+    }),
+  )
+}
 
 export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
   const boardHeightPx =
     ROW_HEIGHT_PX * (layout.rowCounts.length - 1) + TILE_SIZE_PX
-  const maxRowWidthPx =
-    Math.max(...layout.rowCounts.map((rowCount) => rowCount * TILE_SIZE_PX)) +
-    (Math.max(...layout.rowShifts) + 1) * COLUMN_OFFSET_PX
+  const boardWidthPx = getBoardWidth(layout)
 
   return (
-    <div className="overflow-x-auto rounded-[1.7rem] border border-[rgba(87,57,24,0.12)] bg-[linear-gradient(180deg,rgba(255,250,244,0.98),rgba(245,236,223,0.94))] p-4 sm:p-5">
-      <div
-        className="relative"
-        style={{
-          minWidth: `${Math.ceil(maxRowWidthPx)}px`,
-          height: `${Math.ceil(boardHeightPx)}px`,
-        }}
-      >
-        {layout.rowCounts.map((rowCount, rowIndex) => {
-          const rowTiles = tiles.filter((tile) => tile.rowIndex === rowIndex)
+    <div className="overflow-x-auto rounded-[1.45rem] border border-slate-400/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 sm:p-3.5">
+      <div className="flex min-w-fit justify-center">
+        <div
+          className="relative shrink-0"
+          style={{
+            width: `${Math.ceil(boardWidthPx)}px`,
+            minWidth: `${Math.ceil(boardWidthPx)}px`,
+            height: `${Math.ceil(boardHeightPx)}px`,
+          }}
+        >
+          {layout.rowCounts.map((rowCount, rowIndex) => {
+            const rowTiles = tiles.filter((tile) => tile.rowIndex === rowIndex)
 
-          return (
-            <div
-              key={rowIndex}
-              className="absolute flex"
-              style={{
-                top: `${ROW_HEIGHT_PX * rowIndex}px`,
-                left: `${layout.rowShifts[rowIndex] * COLUMN_OFFSET_PX}px`,
-              }}
-            >
-              {rowTiles.slice(0, rowCount).map((tile, tileIndex) => (
-                <button
-                  key={tile.id}
-                  type="button"
-                  onClick={() => {
-                    if (tile.state !== 'hidden') {
-                      onSelectTile(tile)
-                    }
-                  }}
-                  disabled={tile.state === 'hidden'}
-                  className={`group relative flex h-[5.5rem] w-[5.5rem] shrink-0 flex-col items-center justify-center border px-2.5 text-center shadow-[0_1px_0_rgba(255,255,255,0.72)_inset,0_14px_28px_rgba(87,57,24,0.09)] transition-transform duration-150 ${tile.state === 'hidden'
-                      ? 'cursor-default'
-                      : 'cursor-pointer hover:-translate-y-0.5'
-                    }`}
-                  style={{
-                    marginLeft:
-                      tileIndex === 0 ? undefined : `-${TILE_HORIZONTAL_OVERLAP_PX}px`,
-                    clipPath: hexTileClipPath,
-                    WebkitClipPath: hexTileClipPath,
-                    opacity:
-                      tile.state === 'hidden'
-                        ? 0.2
-                        : tile.state === 'unlocked'
-                          ? 0.95
-                          : 1,
-                  }}
-                  title={
-                    tile.state === 'hidden'
-                      ? `Hidden tile ${tile.tileKey}`
-                      : tile.label
-                  }
-                >
-                  <div
-                    className={`absolute inset-0 ${tierToneByColor[tile.colorTier as keyof typeof tierToneByColor]} ${tile.state === 'completed'
-                        ? 'brightness-[0.96] saturate-[1.08]'
-                        : tile.state === 'unlocked'
-                          ? 'brightness-[1.02] saturate-[1.04]'
-                          : 'grayscale-[0.25]'
-                      }`}
-                  />
-                  <div className="absolute inset-[1px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.55),transparent_50%)]" />
-                  <div className="relative z-10 flex flex-col items-center justify-center">
-                    <span className="text-[0.62rem] font-bold uppercase tracking-[0.18em]">
-                      {tile.tileKey}
-                    </span>
-                    <span className="mt-2 line-clamp-3 text-[0.72rem] leading-4 font-semibold">
-                      {tile.state === 'hidden' ? '??' : tile.label}
-                    </span>
-                    <span className="mt-2 text-[0.65rem] font-bold uppercase tracking-[0.14em]">
-                      {tile.state === 'hidden' ? '' : `${tile.points} pts`}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )
-        })}
+            return (
+              <div
+                key={rowIndex}
+                className="absolute flex"
+                style={{
+                  top: `${ROW_HEIGHT_PX * rowIndex}px`,
+                  left: `${layout.rowShifts[rowIndex] * COLUMN_OFFSET_PX}px`,
+                  gap: `${TILE_HORIZONTAL_GAP_PX}px`,
+                }}
+              >
+                {rowTiles.slice(0, rowCount).map((tile) => {
+                  const isHidden = tile.state === 'hidden'
+                  const isCompleted = tile.state === 'completed'
+                  const canSelect = tile.state !== 'hidden'
+
+                  return (
+                    <div
+                      key={tile.id}
+                      className={`relative h-22 w-22 shrink-0 ${getTileFrameClass(tile.colorTier, tile.state)}`}
+                      style={{
+                        clipPath: HEX_TILE_CLIP_PATH,
+                        WebkitClipPath: HEX_TILE_CLIP_PATH,
+                        opacity: isHidden ? 0.32 : 1,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (canSelect) {
+                            onSelectTile(tile)
+                          }
+                        }}
+                        disabled={!canSelect}
+                        title={
+                          isHidden ? `Hidden tile ${tile.tileKey}` : tile.label
+                        }
+                        className={`absolute inset-0 flex items-center justify-center transition ${
+                          canSelect
+                            ? 'cursor-pointer hover:brightness-95'
+                            : 'cursor-default'
+                        } ${getTileFillClass(tile.colorTier, tile.state)}`}
+                        style={{
+                          clipPath: HEX_TILE_CLIP_PATH,
+                          WebkitClipPath: HEX_TILE_CLIP_PATH,
+                          transform: 'scale(0.94)',
+                          transformOrigin: 'center',
+                        }}
+                      >
+                        {isCompleted ? <CompletionMark /> : null}
+
+                        <span
+                          className={
+                            isCompleted
+                              ? 'opacity-50'
+                              : isHidden
+                                ? 'opacity-0'
+                                : ''
+                          }
+                        >
+                          {!isHidden ? (
+                            <img
+                              src={getTileImageUrl(tile.tileKey)}
+                              alt=""
+                              className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+                            />
+                          ) : null}
+                        </span>
+
+                        <span className="sr-only">
+                          {isHidden
+                            ? `Hidden tile ${tile.tileKey}`
+                            : `${tile.tileKey} ${tile.label} ${tile.points} points`}
+                        </span>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
