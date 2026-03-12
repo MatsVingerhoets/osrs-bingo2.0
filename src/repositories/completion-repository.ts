@@ -103,3 +103,26 @@ export async function listTeamTileCompletions(eventId: string, teamId: string) {
     .orderBy('team_tile_completions.completed_at', 'desc')
     .execute()
 }
+
+export async function listEventTileCompletions(eventId: string) {
+  return getDb()
+    .selectFrom('team_tile_completions')
+    .innerJoin('teams', 'teams.id', 'team_tile_completions.team_id')
+    .innerJoin(
+      'board_tiles',
+      'board_tiles.id',
+      'team_tile_completions.board_tile_id',
+    )
+    .select([
+      'team_tile_completions.id',
+      'team_tile_completions.event_id',
+      'team_tile_completions.team_id',
+      'team_tile_completions.completed_by_user_id',
+      'team_tile_completions.completed_at',
+      'teams.name as team_name',
+      'board_tiles.tile_key',
+    ])
+    .where('team_tile_completions.event_id', '=', eventId)
+    .orderBy('team_tile_completions.completed_at', 'desc')
+    .execute()
+}

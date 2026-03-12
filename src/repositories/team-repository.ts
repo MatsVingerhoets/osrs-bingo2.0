@@ -103,6 +103,32 @@ export async function listTeamMembershipsByEvent(eventId: string) {
     .execute()
 }
 
+export async function listTeamMembershipsByEventAndTeam(
+  eventId: string,
+  teamId: string,
+) {
+  return getDb()
+    .selectFrom('team_memberships')
+    .innerJoin('users', 'users.id', 'team_memberships.user_id')
+    .innerJoin('teams', 'teams.id', 'team_memberships.team_id')
+    .select([
+      'team_memberships.id',
+      'team_memberships.event_id',
+      'team_memberships.team_id',
+      'team_memberships.user_id',
+      'team_memberships.created_at',
+      'team_memberships.updated_at',
+      'users.name as user_name',
+      'users.email as user_email',
+      'teams.name as team_name',
+    ])
+    .where('team_memberships.event_id', '=', eventId)
+    .where('team_memberships.team_id', '=', teamId)
+    .orderBy('users.name')
+    .orderBy('users.email')
+    .execute()
+}
+
 export async function findTeamMembershipByEventAndUser(
   eventId: string,
   userId: string,
