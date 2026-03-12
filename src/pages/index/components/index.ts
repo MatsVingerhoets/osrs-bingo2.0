@@ -1,7 +1,7 @@
-export { BoardShell } from './board-shell'
-export { RightRail } from './right-rail'
-export { StatusPanel } from './status-panel'
-export { TopNav } from './top-nav'
+export { BoardShell } from './BoardShell'
+export { RightRail } from './RightRail'
+export { StatusPanel } from './StatusPanel'
+export { TopNav } from './TopNav'
 export type {
   BoardMetric,
   ContributionEntry,

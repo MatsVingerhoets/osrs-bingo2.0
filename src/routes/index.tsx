@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { getCurrentEventContext } from '#/features/events/current-event-context'
-import { IndexPage } from '#/pages/index/page'
+import { IndexPage } from '#/pages/index/IndexPage'
 import { getCurrentAuth } from '#/server/auth/current-auth'
 
 export const Route = createFileRoute('/')({

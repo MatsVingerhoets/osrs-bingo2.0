@@ -35,7 +35,21 @@ function getTileImageUrl(tileKey: string) {
 
 function getTileFrameClass(colorTier: string, state: PlayerBoardTile['state']) {
   if (state === 'unlocked') {
-    return 'bg-slate-200/20'
+    switch (colorTier) {
+      case 'green':
+        return 'bg-teal-300/28'
+      case 'blue':
+        return 'bg-sky-300/28'
+      case 'red':
+        return 'bg-rose-300/28'
+      case 'purple':
+        return 'bg-violet-300/28'
+      case 'yellow':
+        return 'bg-amber-300/32'
+      case 'white':
+      default:
+        return 'bg-slate-200/24'
+    }
   }
 
   switch (colorTier) {
@@ -57,7 +71,21 @@ function getTileFrameClass(colorTier: string, state: PlayerBoardTile['state']) {
 
 function getTileFillClass(colorTier: string, state: PlayerBoardTile['state']) {
   if (state === 'unlocked') {
-    return 'bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900'
+    switch (colorTier) {
+      case 'green':
+        return 'bg-gradient-to-b from-teal-950 to-slate-950 hover:from-teal-900 hover:to-slate-900'
+      case 'blue':
+        return 'bg-gradient-to-b from-sky-950 to-slate-950 hover:from-sky-900 hover:to-slate-900'
+      case 'red':
+        return 'bg-gradient-to-b from-rose-950 to-slate-950 hover:from-rose-900 hover:to-slate-900'
+      case 'purple':
+        return 'bg-gradient-to-b from-violet-950 to-slate-950 hover:from-violet-900 hover:to-slate-900'
+      case 'yellow':
+        return 'bg-gradient-to-b from-amber-950 to-slate-950 hover:from-amber-900 hover:to-slate-900'
+      case 'white':
+      default:
+        return 'bg-gradient-to-b from-slate-700 to-slate-950 hover:from-slate-600 hover:to-slate-900'
+    }
   }
 
   switch (colorTier) {

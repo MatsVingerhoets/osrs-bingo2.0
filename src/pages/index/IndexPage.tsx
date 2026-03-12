@@ -152,7 +152,7 @@ export function IndexPage({ auth, currentEvent }: IndexPageProps) {
         ) : null}
 
         {currentEvent.kind === 'ready' ? (
-          <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
             <BoardShell
               eyebrow="Team Board"
               title={`${currentEvent.team.name} live board`}
