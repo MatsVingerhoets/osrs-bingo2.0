@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite dev --host 0.0.0.0 --port 3000",
     "build": "vite build",
+    "start": "node dist/server/server.js",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "db:migrate": "tsx src/lib/db/migrate.ts",
     "test": "vitest run",

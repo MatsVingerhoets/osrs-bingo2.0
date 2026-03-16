@@ -1,0 +1,65 @@
+name: Deploy Public Container
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to deploy
+        required: false
+        default: latest
+      public_port:
+        description: External port on the target host
+        required: false
+        default: '3000'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+      - name: Configure SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Prepare deployment files
+        run: |
+          install -m 700 -d .deploy
+          cp deploy/docker-compose.public.yml .deploy/docker-compose.yml
+          cat <<EOF > .deploy/.deploy.env
+          IMAGE_REF=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
+          PUBLIC_PORT=${{ inputs.public_port }}
+          EOF
+          printf '%s\n' "${{ secrets.APP_ENV_FILE }}" > .deploy/app.env
+
+      - name: Upload deployment bundle
+        run: |
+          ssh -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "mkdir -p '${{ secrets.DEPLOY_PATH }}'"
+          scp -P "${{ secrets.DEPLOY_PORT }}" .deploy/docker-compose.yml "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/docker-compose.yml"
+          scp -P "${{ secrets.DEPLOY_PORT }}" .deploy/.deploy.env "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/.deploy.env"
+          scp -P "${{ secrets.DEPLOY_PORT }}" .deploy/app.env "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/app.env"
+
+      - name: Pull and restart service
+        run: |
+          ssh -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "
+            set -eu
+            cd '${{ secrets.DEPLOY_PATH }}'
+            echo '${{ secrets.GHCR_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ secrets.GHCR_USERNAME }}' --password-stdin
+            docker compose --env-file .deploy.env -f docker-compose.yml pull
+            docker compose --env-file .deploy.env -f docker-compose.yml up -d
+          "
