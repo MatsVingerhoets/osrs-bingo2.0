@@ -36,22 +36,7 @@ export const Route = createFileRoute('/auth/callback')({
 
         const authEnv = requireAuthEnv()
         const identity = getKeycloakIdentity(claims as Record<string, unknown>)
-        console.log(
-          'Keycloak callback role debug clientId=%s resource_access=%o client_roles=%o',
-          authEnv.keycloakClientId,
-          (claims as Record<string, unknown>).resource_access,
-          (claims as Record<string, unknown>).resource_access &&
-            typeof (claims as Record<string, unknown>).resource_access ===
-              'object' &&
-            (claims as Record<string, unknown>).resource_access !== null
-            ? (
-                (claims as Record<string, unknown>).resource_access as Record<
-                  string,
-                  unknown
-                >
-              )[authEnv.keycloakClientId]
-            : undefined,
-        )
+
         const roles = mapClientRolesToAppRoles(
           claims as Record<string, unknown>,
           authEnv.keycloakClientId,

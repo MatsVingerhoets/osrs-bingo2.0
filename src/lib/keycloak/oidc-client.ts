@@ -33,8 +33,6 @@ export async function buildLoginUrl() {
   const state = oidc.randomState()
   const redirectUri = getKeycloakRedirectUri()
 
-  console.log('OIDC buildLoginUrl redirectUri=%s', redirectUri)
-
   return {
     codeVerifier,
     state,
@@ -62,13 +60,6 @@ export async function exchangeAuthorizationCode(
   normalizedRequestUrl.username = publicRedirectUrl.username
   normalizedRequestUrl.password = publicRedirectUrl.password
   normalizedRequestUrl.host = publicRedirectUrl.host
-
-  console.log(
-    'OIDC exchangeAuthorizationCode redirectUri=%s requestUrl=%s normalizedRequestUrl=%s',
-    redirectUri,
-    requestUrl,
-    normalizedRequestUrl.toString(),
-  )
 
   return oidc.authorizationCodeGrant(config, normalizedRequestUrl, {
     pkceCodeVerifier: codeVerifier,
