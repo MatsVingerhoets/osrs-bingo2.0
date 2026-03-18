@@ -20,9 +20,9 @@ type PlayerBoardProps = {
   onSelectTile: (tile: PlayerBoardTile) => void
 }
 
-const TILE_SIZE_PX = 88
-const TILE_HORIZONTAL_GAP_PX = 8
-const TILE_VERTICAL_GAP_PX = 8
+const TILE_SIZE_PX = 78
+const TILE_HORIZONTAL_GAP_PX = 6
+const TILE_VERTICAL_GAP_PX = 6
 const ROW_HEIGHT_PX = TILE_SIZE_PX * 0.75 + TILE_VERTICAL_GAP_PX
 const COLUMN_OFFSET_PX = TILE_SIZE_PX / 2 + TILE_HORIZONTAL_GAP_PX / 2
 const ROW_STEP_PX = TILE_SIZE_PX + TILE_HORIZONTAL_GAP_PX
@@ -179,7 +179,7 @@ export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
                   return (
                     <div
                       key={tile.id}
-                      className={`relative h-22 w-22 shrink-0 ${getTileFrameClass(tile.colorTier, tile.state)}`}
+                      className={`relative h-[4.875rem] w-[4.875rem] shrink-0 ${getTileFrameClass(tile.colorTier, tile.state)}`}
                       style={{
                         clipPath: HEX_TILE_CLIP_PATH,
                         WebkitClipPath: HEX_TILE_CLIP_PATH,
@@ -224,7 +224,7 @@ export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
                             <img
                               src={getTileImageUrl(tile.tileKey)}
                               alt=""
-                              className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+                              className="h-7 w-7 object-contain sm:h-8 sm:w-8"
                             />
                           ) : null}
                         </span>
