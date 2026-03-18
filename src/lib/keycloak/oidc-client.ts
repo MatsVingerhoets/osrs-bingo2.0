@@ -55,17 +55,24 @@ export async function exchangeAuthorizationCode(
 ) {
   const config = await getOidcConfiguration()
   const redirectUri = getKeycloakRedirectUri()
+  const normalizedRequestUrl = new URL(requestUrl)
+  const publicRedirectUrl = new URL(redirectUri)
+
+  normalizedRequestUrl.protocol = publicRedirectUrl.protocol
+  normalizedRequestUrl.username = publicRedirectUrl.username
+  normalizedRequestUrl.password = publicRedirectUrl.password
+  normalizedRequestUrl.host = publicRedirectUrl.host
 
   console.log(
-    'OIDC exchangeAuthorizationCode redirectUri=%s requestUrl=%s',
+    'OIDC exchangeAuthorizationCode redirectUri=%s requestUrl=%s normalizedRequestUrl=%s',
     redirectUri,
     requestUrl,
+    normalizedRequestUrl.toString(),
   )
 
-  return oidc.authorizationCodeGrant(config, new URL(requestUrl), {
+  return oidc.authorizationCodeGrant(config, normalizedRequestUrl, {
     pkceCodeVerifier: codeVerifier,
     expectedState,
-    redirectUri,
   })
 }
 
