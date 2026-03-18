@@ -107,28 +107,30 @@ function getTileFillClass(colorTier: string, state: PlayerBoardTile['state']) {
 
 function CompletionMark() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="absolute inset-0 z-20 m-auto h-14 w-14 text-emerald-800"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="8.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M16.9 8.8L10.7 15l-3.6-3.6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div className="absolute inset-0 z-20 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-950/82 shadow-[0_8px_18px_rgba(2,6,23,0.45)] backdrop-blur-sm">
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className="h-7 w-7 text-emerald-300"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="8.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M16.9 8.8L10.7 15l-3.6-3.6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   )
 }
 
