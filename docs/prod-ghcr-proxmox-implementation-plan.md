@@ -47,11 +47,14 @@ The implementation is complete when all of the following are true:
 - Phase 2 is complete.
 - Phase 3 is complete.
 - Phase 4 is complete.
+- Phase 6 is complete in-repo.
+- Phase 5 is an external GitHub/package settings task and remains manual.
 - The repo now builds the Node/Docker runtime through Nitro.
 - Production starts with `npm run start`, which runs `.output/server/index.mjs`.
 - The repo now includes a dedicated production image definition in `Dockerfile.prod`.
 - The repo now includes a production-only env example in `deploy/app.env.example`.
 - The repo now includes a GHCR publish workflow in `.github/workflows/publish-image.yml`.
+- The repo now includes a host-side compose template in `deploy/docker-compose.prod.yml`.
 
 ## Phase 1: Production Runtime Definition
 

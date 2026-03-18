@@ -55,6 +55,7 @@ export async function exchangeAuthorizationCode(
   return oidc.authorizationCodeGrant(config, new URL(requestUrl), {
     pkceCodeVerifier: codeVerifier,
     expectedState,
+    redirectUri: getKeycloakRedirectUri(),
   })
 }
 
