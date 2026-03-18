@@ -1,8 +1,0 @@
-services:
-  app:
-    image: ${IMAGE_REF}
-    restart: unless-stopped
-    ports:
-      - "${PUBLIC_PORT:-3000}:3000"
-    env_file:
-      - app.env

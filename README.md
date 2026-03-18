@@ -30,6 +30,7 @@ npm run dev
 
 - `npm run dev` starts the TanStack Start dev server on port `3000`
 - `npm run build` builds the production server and client bundles
+- `npm run start` runs the production server from `.output/server/index.mjs`
 - `npm run preview` serves the production build locally
 - `npm run db:migrate` runs the Kysely migrations against `DATABASE_URL`
 - `npm run lint` runs ESLint
@@ -94,5 +95,6 @@ src/
 
 - `src/lib/env/public.ts` is the client-safe env surface.
 - `src/lib/env/server.ts` is the server-only env surface.
+- production Node/Docker builds use the Nitro adapter and start with `npm run start`
 - Future auth and database work should import those modules instead of reading `process.env` ad hoc.
 - Phase 3 replaces the temporary file-backed auth store with a database-backed user repository.

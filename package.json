@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite dev --host 0.0.0.0 --port 3000",
     "build": "vite build",
-    "start": "node dist/server/server.js",
+    "start": "node .output/server/index.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "db:migrate": "tsx src/lib/db/migrate.ts",
     "test": "vitest run",
@@ -43,6 +43,7 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "eslint": "^9.34.0",
+    "nitro": "^3.0.260311-beta",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
