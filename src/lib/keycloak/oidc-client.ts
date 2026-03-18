@@ -31,12 +31,15 @@ export async function buildLoginUrl() {
   const codeVerifier = oidc.randomPKCECodeVerifier()
   const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier)
   const state = oidc.randomState()
+  const redirectUri = getKeycloakRedirectUri()
+
+  console.log('OIDC buildLoginUrl redirectUri=%s', redirectUri)
 
   return {
     codeVerifier,
     state,
     redirectUrl: oidc.buildAuthorizationUrl(config, {
-      redirect_uri: getKeycloakRedirectUri(),
+      redirect_uri: redirectUri,
       scope: 'openid profile email',
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
@@ -51,11 +54,18 @@ export async function exchangeAuthorizationCode(
   expectedState: string,
 ) {
   const config = await getOidcConfiguration()
+  const redirectUri = getKeycloakRedirectUri()
+
+  console.log(
+    'OIDC exchangeAuthorizationCode redirectUri=%s requestUrl=%s',
+    redirectUri,
+    requestUrl,
+  )
 
   return oidc.authorizationCodeGrant(config, new URL(requestUrl), {
     pkceCodeVerifier: codeVerifier,
     expectedState,
-    redirectUri: getKeycloakRedirectUri(),
+    redirectUri,
   })
 }
 
