@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 type PlayerBoardTile = {
   id: string
   tileKey: string
@@ -20,14 +22,78 @@ type PlayerBoardProps = {
   onSelectTile: (tile: PlayerBoardTile) => void
 }
 
-const TILE_SIZE_PX = 78
-const TILE_HORIZONTAL_GAP_PX = 6
-const TILE_VERTICAL_GAP_PX = 6
-const ROW_HEIGHT_PX = TILE_SIZE_PX * 0.75 + TILE_VERTICAL_GAP_PX
-const COLUMN_OFFSET_PX = TILE_SIZE_PX / 2 + TILE_HORIZONTAL_GAP_PX / 2
-const ROW_STEP_PX = TILE_SIZE_PX + TILE_HORIZONTAL_GAP_PX
+type BoardSizing = {
+  tileSizePx: number
+  tileHorizontalGapPx: number
+  tileVerticalGapPx: number
+  iconSizePx: number
+  completionMarkSizePx: number
+  completionIconSizePx: number
+}
+
+type ViewportMetrics = {
+  viewportWidth: number
+  scaledScreenWidth: number
+}
+
+const LARGE_BOARD_SIZING: BoardSizing = {
+  tileSizePx: 80,
+  tileHorizontalGapPx: 6,
+  tileVerticalGapPx: 6,
+  iconSizePx: 33,
+  completionMarkSizePx: 45,
+  completionIconSizePx: 28,
+}
+
+const MEDIUM_BOARD_SIZING: BoardSizing = {
+  tileSizePx: 72,
+  tileHorizontalGapPx: 5,
+  tileVerticalGapPx: 5,
+  iconSizePx: 30,
+  completionMarkSizePx: 40,
+  completionIconSizePx: 26,
+}
+
+const COMPACT_BOARD_SIZING: BoardSizing = {
+  tileSizePx: 66,
+  tileHorizontalGapPx: 4,
+  tileVerticalGapPx: 4,
+  iconSizePx: 28,
+  completionMarkSizePx: 36,
+  completionIconSizePx: 24,
+}
+
 const HEX_TILE_CLIP_PATH =
   'polygon(0% 25%, 50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%)'
+
+function getBoardSizing(metrics: ViewportMetrics | null): BoardSizing {
+  if (metrics !== null) {
+    if (
+      metrics.scaledScreenWidth >= 3000 ||
+      metrics.viewportWidth >= 3000
+    ) {
+      return LARGE_BOARD_SIZING
+    }
+
+    if (metrics.viewportWidth >= 2200) {
+      return MEDIUM_BOARD_SIZING
+    }
+  }
+
+  return COMPACT_BOARD_SIZING
+}
+
+function getRowHeightPx(sizing: BoardSizing) {
+  return sizing.tileSizePx * 0.75 + sizing.tileVerticalGapPx
+}
+
+function getColumnOffsetPx(sizing: BoardSizing) {
+  return sizing.tileSizePx / 2 + sizing.tileHorizontalGapPx / 2
+}
+
+function getRowStepPx(sizing: BoardSizing) {
+  return sizing.tileSizePx + sizing.tileHorizontalGapPx
+}
 
 function getTileImageUrl(tileKey: string) {
   return `/images/tiles/${tileKey.padStart(3, '0')}.webp`
@@ -105,13 +171,23 @@ function getTileFillClass(colorTier: string, state: PlayerBoardTile['state']) {
   }
 }
 
-function CompletionMark() {
+function CompletionMark({ sizing }: { sizing: BoardSizing }) {
   return (
-    <div className="absolute inset-0 z-20 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-950/82 shadow-[0_8px_18px_rgba(2,6,23,0.45)] backdrop-blur-sm">
+    <div
+      className="absolute inset-0 z-20 m-auto flex items-center justify-center rounded-full bg-slate-950/82 shadow-[0_8px_18px_rgba(2,6,23,0.45)] backdrop-blur-sm"
+      style={{
+        width: `${sizing.completionMarkSizePx}px`,
+        height: `${sizing.completionMarkSizePx}px`,
+      }}
+    >
       <svg
         viewBox="0 0 24 24"
         aria-hidden="true"
-        className="h-7 w-7 text-emerald-300"
+        className="text-emerald-300"
+        style={{
+          width: `${sizing.completionIconSizePx}px`,
+          height: `${sizing.completionIconSizePx}px`,
+        }}
       >
         <circle
           cx="12"
@@ -134,20 +210,44 @@ function CompletionMark() {
   )
 }
 
-function getBoardWidth(layout: PlayerBoardLayout) {
+function getBoardWidth(layout: PlayerBoardLayout, sizing: BoardSizing) {
+  const rowStepPx = getRowStepPx(sizing)
+  const columnOffsetPx = getColumnOffsetPx(sizing)
+
   return Math.max(
     ...layout.rowCounts.map((rowCount, rowIndex) => {
-      const rowWidth = TILE_SIZE_PX + (rowCount - 1) * ROW_STEP_PX
+      const rowWidth = sizing.tileSizePx + (rowCount - 1) * rowStepPx
 
-      return layout.rowShifts[rowIndex] * COLUMN_OFFSET_PX + rowWidth
+      return layout.rowShifts[rowIndex] * columnOffsetPx + rowWidth
     }),
   )
 }
 
 export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
+  const [viewportMetrics, setViewportMetrics] = useState<ViewportMetrics | null>(null)
+
+  useEffect(() => {
+    function updateViewportMetrics() {
+      setViewportMetrics({
+        viewportWidth: window.innerWidth,
+        scaledScreenWidth: window.screen.width * window.devicePixelRatio,
+      })
+    }
+
+    updateViewportMetrics()
+    window.addEventListener('resize', updateViewportMetrics)
+
+    return () => {
+      window.removeEventListener('resize', updateViewportMetrics)
+    }
+  }, [])
+
+  const sizing = getBoardSizing(viewportMetrics)
+  const rowHeightPx = getRowHeightPx(sizing)
+  const columnOffsetPx = getColumnOffsetPx(sizing)
   const boardHeightPx =
-    ROW_HEIGHT_PX * (layout.rowCounts.length - 1) + TILE_SIZE_PX
-  const boardWidthPx = getBoardWidth(layout)
+    rowHeightPx * (layout.rowCounts.length - 1) + sizing.tileSizePx
+  const boardWidthPx = getBoardWidth(layout, sizing)
 
   return (
     <div className="overflow-x-auto rounded-[1.45rem] border border-slate-400/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 sm:p-3.5">
@@ -168,9 +268,9 @@ export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
                 key={rowIndex}
                 className="absolute flex"
                 style={{
-                  top: `${ROW_HEIGHT_PX * rowIndex}px`,
-                  left: `${layout.rowShifts[rowIndex] * COLUMN_OFFSET_PX}px`,
-                  gap: `${TILE_HORIZONTAL_GAP_PX}px`,
+                  top: `${rowHeightPx * rowIndex}px`,
+                  left: `${layout.rowShifts[rowIndex] * columnOffsetPx}px`,
+                  gap: `${sizing.tileHorizontalGapPx}px`,
                 }}
               >
                 {rowTiles.slice(0, rowCount).map((tile) => {
@@ -181,8 +281,10 @@ export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
                   return (
                     <div
                       key={tile.id}
-                      className={`relative h-[4.875rem] w-[4.875rem] shrink-0 ${getTileFrameClass(tile.colorTier, tile.state)}`}
+                      className={`relative shrink-0 ${getTileFrameClass(tile.colorTier, tile.state)}`}
                       style={{
+                        width: `${sizing.tileSizePx}px`,
+                        height: `${sizing.tileSizePx}px`,
                         clipPath: HEX_TILE_CLIP_PATH,
                         WebkitClipPath: HEX_TILE_CLIP_PATH,
                         opacity: isHidden ? 0.32 : 1,
@@ -211,7 +313,7 @@ export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
                           transformOrigin: 'center',
                         }}
                       >
-                        {isCompleted ? <CompletionMark /> : null}
+                        {isCompleted ? <CompletionMark sizing={sizing} /> : null}
 
                         <span
                           className={
@@ -226,7 +328,11 @@ export function PlayerBoard({ layout, tiles, onSelectTile }: PlayerBoardProps) {
                             <img
                               src={getTileImageUrl(tile.tileKey)}
                               alt=""
-                              className="h-7 w-7 object-contain sm:h-8 sm:w-8"
+                              className="object-contain"
+                              style={{
+                                width: `${sizing.iconSizePx}px`,
+                                height: `${sizing.iconSizePx}px`,
+                              }}
                             />
                           ) : null}
                         </span>

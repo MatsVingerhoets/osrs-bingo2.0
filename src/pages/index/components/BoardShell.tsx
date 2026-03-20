@@ -23,7 +23,7 @@ export function BoardShell({
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 sm:min-w-[21rem]">
+        <div className="grid grid-cols-3 gap-2.5 sm:min-w-[18rem] min-[2200px]:min-w-[20rem] min-[3000px]:min-w-[21rem]">
           {metrics.map((metric) => (
             <div
               key={metric.label}
